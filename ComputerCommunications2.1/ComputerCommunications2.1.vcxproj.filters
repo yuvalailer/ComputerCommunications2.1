@@ -16,6 +16,12 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+    <Text Include="input_file.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="output_file.txt">
+      <Filter>Source Files</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -32,5 +38,19 @@
     <ClCompile Include="sch.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="pa2_2017.pdf">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="Recitation07.pdf">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="tester.py">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
