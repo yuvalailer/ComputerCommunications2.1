@@ -261,6 +261,6 @@ __pycache__/
 *.pyc
 
 ################
-*.vcsproj
+*.vcxproj
 *.filters
 *.sln
