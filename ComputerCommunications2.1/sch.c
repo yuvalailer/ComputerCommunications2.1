@@ -1,9 +1,4 @@
-﻿// ComputerCommunications2.1.cpp : Defines the entry point for the console application.
-//
-
-#include "stdafx.h"
-
-#include <errno.h>	/* ERANGE, errno */
+﻿#include <errno.h>	/* ERANGE, errno */
 #include <limits.h>	/* LONG_MAX, LONG_MIN */
 #include <stdio.h>	/* FILE, printf, fprintf, sprintf, stderr, fopen, fclose */
 #include <stdlib.h>	/* EXIT_FAILURE, EXIT_SUCCESS, NULL, strtol */
@@ -95,7 +90,7 @@ int validate_IPv4(const char *s) { /* http://stackoverflow.com/questions/791982/
 		return -1;
 	}
 	tail[0] = 0;
-	c = sscanf(s, "%3u.%3u.%3u.%3u%s", &d[0], &d[1], &d[2], &d[3], tail);
+	c = sscanf_s(s, "%3u.%3u.%3u.%3u%s", &d[0], &d[1], &d[2], &d[3], tail);
 	if (c != 4 || tail[0]) {
 		return -1;
 	}
