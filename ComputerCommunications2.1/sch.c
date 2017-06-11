@@ -502,15 +502,10 @@ int main(int argc, char *argv[]) {
 								   /* Start the clock :) */
 	int readed = 0;
 	while ( (readed = read_packet(last_packet, input_weight)) || (STRUCTURE.count > 0) ) { /* while there are more packets in file */ /* TODO we will be needed to add check that we also finish to send everything */
-		if (readed = 0) {
+		if (readed == 0) {
 			last_packet->Time = LONG_MAX;
 		}
-		if (readed && (last_packet->Time <= CLOCK)) {
-			if (enqueue(last_packet)) { /* Add the new packet to the data structure and keep reading for more packets with the same time */
-				fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
-				return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
-			}
-		} else {
+		if ((readed == 0) || (last_packet->Time > CLOCK)) {
 			while (last_packet->Time > CLOCK) {
 				if (STRUCTURE.count > 0){
 					CLOCK += send_packet();
@@ -518,10 +513,10 @@ int main(int argc, char *argv[]) {
 					CLOCK = last_packet->Time;
 				}
 			}
-			if (enqueue(last_packet)) { /* Add the new packet to the data structure and keep reading for more packets with the same time */
-				fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
-				return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
-			}
+		}
+		if (enqueue(last_packet)) { /* Add the new packet to the data structure and keep reading for more packets with the same time */
+			fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
+			return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
 		}
 	}
 	/* Exit */
