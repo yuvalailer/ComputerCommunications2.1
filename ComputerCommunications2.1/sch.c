@@ -24,7 +24,7 @@
 #define F_ERROR_WEIGHT_INVALID_MSG	"[Error] The weight '%s' is not a positive integer\n"
 
 typedef struct DataStructure {
-	struct Packets** head;	/* Pointer to the head of the round double linked list */
+	struct Packets* head;	/* Pointer to the head of the round double linked list */
 	int count;		/* The total number of packets, Need to be updated in every insert & delete */
 } structure;
 typedef struct Packets {
@@ -37,10 +37,10 @@ typedef struct Packets {
 	int length;		/* Packet length (int [64,16384]) */
 	int weight;		/* Flow weight (int [1,2147483647]) */
 	int start_byte;		/* From were shold next transmition Start*/
-	struct Packets** next;	/* Pointer to next packet in the list */
-	struct Packets** prev;	/* Pointer to previously packet in the list */
-	struct Packets** up;	/* Pointer to upper packet in the queue */
-	struct Packets** down;	/* Pointer to lower packet in the queue */
+	struct Packets* next;	/* Pointer to next packet in the list */
+	struct Packets* prev;	/* Pointer to previously packet in the list */
+	struct Packets* up;	/* Pointer to upper packet in the queue */
+	struct Packets* down;	/* Pointer to lower packet in the queue */
 } packet;
 FILE* IN_FILE = NULL;		/* The input file */
 FILE* OUT_FILE = NULL;		/* The output file */
@@ -324,35 +324,26 @@ int enqueue(packet* pk) {
 	/* Function variables */
 	packet* search_head = NULL; /* Pointer to the current element in our round double linked list */
 								/* Init the new packet */
-	packet* new_pk = (packet*)malloc(sizeof(packet));
+	packet* new_pk = malloc(sizeof(struct Packets));
 	new_pk->Time = 0;
-	if (new_pk == NULL) {
-		printf("malloc error\n");
-	}
-	printf("~~~START enqueue~~~\n"); /* XXX */
-	if (STRUCTURE.head != NULL) { printf("[G4] Pointers: [head]%p = %ld\n", (void *)(STRUCTURE.head), (*STRUCTURE.head)->pktID); } /* XXX */
-	if (STRUCTURE.head) { printf("[G6] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head)->next)); } /* XXX */
-	printf("[B_0] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", pk->pktID, pk->Time, pk->Sadd, pk->Sport, pk->Dadd, pk->Dport, pk->length, pk->weight); /* TODO DEBUG XXX DELME XXX XXX */
-	printf("[B_1] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", new_pk->pktID, new_pk->Time, new_pk->Sadd, new_pk->Sport, new_pk->Dadd, new_pk->Dport, new_pk->length, new_pk->weight); /* TODO DEBUG XXX DELME XXX XXX */
 	copy_packet(pk, new_pk);
-	printf("[B] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", new_pk->pktID, new_pk->Time, new_pk->Sadd, new_pk->Sport, new_pk->Dadd, new_pk->Dport, new_pk->length, new_pk->weight); /* TODO DEBUG XXX DELME XXX XXX */
-	if (STRUCTURE.head) { printf("[F] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head)->next)); } /* XXX */
+	if (STRUCTURE.head) { printf("[F] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
 	if (STRUCTURE.head == NULL) { /* This is the first packet in our data structure */
 		STRUCTURE.head = &new_pk; /* The new packet is our new head */
 		new_pk->prev = &new_pk; /* And he his the prev and next of himself */
 		new_pk->next = &new_pk;
-		printf("[C] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head)->next)); /* XXX */
+		printf("[C] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
 		STRUCTURE.count = 1; /* We only have one packet in our data structure */
 	} else { /* Search if the packet belong to an old flow */
-		search_head = *(STRUCTURE.head);
+		search_head = STRUCTURE.head;
 		do {
 			printf("GGG\n"); /* XXX */
-			printf("[D] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head)->next)); /* XXX */
+			printf("[D] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
 			if (same_flow(search_head, new_pk)) { /* If we found a flow that the new packet belongs to */
 				printf("JJJ\n"); /* XXX */
 				/* Update the packet before and after to point on the new packet */
-				(*search_head->prev)->next = &new_pk;
-				(*search_head->next)->prev = &new_pk;
+				(*search_head->prev).next = &new_pk;
+				(*search_head->next).prev = &new_pk;
 				/* Connect the new packet to the packets before and after */
 				new_pk->next = search_head->next;
 				new_pk->prev = search_head->prev;
@@ -367,13 +358,13 @@ int enqueue(packet* pk) {
 				printf("~~~END enqueue~~~\n"); /* XXX */
 				return 0;
 			}
-			search_head = *(search_head->next); /* Move our search head to the next element */
-		} while (search_head != *(STRUCTURE.head)); /* Until we complets a single round over the list */
+			search_head = search_head->next; /* Move our search head to the next element */
+		} while (search_head != STRUCTURE.head); /* Until we complets a single round over the list */
 		/* Havn't found a flow that the new packet belongs to => Create a new one */
 		new_pk->next = STRUCTURE.head;
-		new_pk->prev = (*STRUCTURE.head)->prev;
-		(*(*STRUCTURE.head)->prev)->next = &new_pk;
-		(*STRUCTURE.head)->prev = &new_pk;
+		new_pk->prev = (*STRUCTURE.head).prev;
+		(*(*STRUCTURE.head).prev).next = &new_pk;
+		(*STRUCTURE.head).prev = &new_pk;
 		/* Finish */
 		STRUCTURE.count++; /* We added one packet to the data structure */
 	}
@@ -389,14 +380,14 @@ int enqueue(packet* pk) {
 */
 int dequeue(packet* pk, packet* head_of_line) { /* TODO TODO TODO Remove packet from our data structure */
 	if ((pk->next != NULL) && (pk->prev != NULL)) {
-		(*pk->next)->prev = pk->prev;
-		(*pk->prev)->next = pk->next;
+		(*pk->next).prev = pk->prev;
+		(*pk->prev).next = pk->next;
 	}
 	if (head_of_line == pk) {
 		*head_of_line = NILL;
 	}
 	if (pk->up != NULL) {
-		(*pk->up)->down = NULL;
+		(*pk->up).down = NULL;
 	}
 	free(pk);
 	return 0; /* TODO TODO TODO Return 0 on success & 1 on failure */
@@ -407,17 +398,17 @@ int dequeue(packet* pk, packet* head_of_line) { /* TODO TODO TODO Remove packet 
 * For debugging and support use only!!!
 */
 void print() {
-	packet* pkt = *(STRUCTURE.head);
+	packet* pkt = STRUCTURE.head;
 	printf("~~~START print~~~\n"); /* XXX */
-	printf("[A] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head)->next)); /* XXX */
+	printf("[A] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
 	printf("╔════════════════════════════════════════════════════════════════════════╗\n");
 	printf("║ Current time=%-20ld Number of waiting packets=%-10i ║\n", CLOCK, STRUCTURE.count);
 	printf("╠═════════════════════════╤═══════════════════════════╤══════════════════╣\n");
 	do {
-		printf("[B] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head)->next)); /* XXX */
+		printf("[B] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
 		printf("║ ID=%-20ld │ Time=%-20ld │ Sent=%5i/%-5i ║\n", pkt->pktID, pkt->Time, pkt->start_byte, pkt->length);
-		pkt = *(pkt->next); /* Move to the next element */
-	} while (pkt != *(STRUCTURE.head)); /* Until we complets a single round over the list */
+		pkt = pkt->next; /* Move to the next element */
+	} while (pkt != STRUCTURE.head); /* Until we complets a single round over the list */
 	printf("╚═════════════════════════╧═══════════════════════════╧══════════════════╝\n");
 	/*╔══════════════════════════════════╤═══════════════════════╤════════════════╗*/
 	/*║               Col1               │         Col2          │      Col3      ║*/
@@ -426,7 +417,7 @@ void print() {
 	/*║                                  │                       │                ║*/
 	/*║                                  │                       │                ║*/
 	/*╚══════════════════════════════════╧═══════════════════════╧════════════════╝*/
-	if (STRUCTURE.head) { printf("[H] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head)->next)); } /* XXX */
+	if (STRUCTURE.head) { printf("[H] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
 	printf("~~~END print~~~\n"); /* XXX */
 }
 /* int main(int argc, char *argv[]) { }
