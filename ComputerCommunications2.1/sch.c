@@ -320,18 +320,15 @@ int same_flow(packet* pacA, packet* pacB) {
 * Add the packet to our data structure
 * Return 0 on success and 1 in case of an error
 */
-int enqueue(packet* pk) {
+int enqueue(packet* new_pk) {
 	/* Function variables */
 	packet* search_head = NULL; /* Pointer to the current element in our round double linked list */
 								/* Init the new packet */
-	packet* new_pk = malloc(sizeof(struct Packets));
-	new_pk->Time = 0;
-	copy_packet(pk, new_pk);
 	if (STRUCTURE.head) { printf("[F] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
 	if (STRUCTURE.head == NULL) { /* This is the first packet in our data structure */
-		STRUCTURE.head = &new_pk; /* The new packet is our new head */
-		new_pk->prev = &new_pk; /* And he his the prev and next of himself */
-		new_pk->next = &new_pk;
+		STRUCTURE.head = new_pk; /* The new packet is our new head */
+		(*new_pk).prev = new_pk; /* And he his the prev and next of himself */
+		(*new_pk).next = new_pk;
 		printf("[C] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
 		STRUCTURE.count = 1; /* We only have one packet in our data structure */
 	} else { /* Search if the packet belong to an old flow */
@@ -342,8 +339,8 @@ int enqueue(packet* pk) {
 			if (same_flow(search_head, new_pk)) { /* If we found a flow that the new packet belongs to */
 				printf("JJJ\n"); /* XXX */
 				/* Update the packet before and after to point on the new packet */
-				(*search_head->prev).next = &new_pk;
-				(*search_head->next).prev = &new_pk;
+				(*search_head->prev).next = new_pk;
+				(*search_head->next).prev = new_pk;
 				/* Connect the new packet to the packets before and after */
 				new_pk->next = search_head->next;
 				new_pk->prev = search_head->prev;
@@ -351,8 +348,8 @@ int enqueue(packet* pk) {
 				search_head->next = NULL;
 				search_head->prev = NULL;
 				/* Connect the old and the new packets with the up/down pointers */
-				new_pk->down = &search_head;
-				search_head->up = &new_pk;
+				new_pk->down = search_head;
+				search_head->up = new_pk;
 				/* Finish */
 				STRUCTURE.count++; /* We added one packet to the data structure */
 				printf("~~~END enqueue~~~\n"); /* XXX */
@@ -363,8 +360,8 @@ int enqueue(packet* pk) {
 		/* Havn't found a flow that the new packet belongs to => Create a new one */
 		new_pk->next = STRUCTURE.head;
 		new_pk->prev = (*STRUCTURE.head).prev;
-		(*(*STRUCTURE.head).prev).next = &new_pk;
-		(*STRUCTURE.head).prev = &new_pk;
+		(*(*STRUCTURE.head).prev).next = new_pk;
+		(*STRUCTURE.head).prev = new_pk;
 		/* Finish */
 		STRUCTURE.count++; /* We added one packet to the data structure */
 	}
@@ -505,7 +502,9 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		}
-		if (enqueue(last_packet)) { /* Add the new packet to the data structure and keep reading for more packets with the same time */
+		packet* new_pk = (packet *)malloc(sizeof(packet));
+		copy_packet(last_packet, new_pk);
+		if (enqueue(new_pk)) { /* Add the new packet to the data structure and keep reading for more packets with the same time */
 			fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
 			return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
 		}
