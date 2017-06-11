@@ -263,8 +263,7 @@ int read_packet(packet* pk, int default_weight) {
 * ??? XXX ??? XXX
 * Return ??? XXX ??? XXX
 */
-int send_packet(packet pk) { /* TODO TODO TODO  Write to output file */
-	pk = pk; /* TODO XXX DELME XXX TODO */
+int send_packet() { /* TODO TODO TODO  Write to output file */
 	return 0; /* TODO TODO TODO Return 0 on success & 1 on failure */
 }
 /* void copy_packet(packet* src, packet* dst) { }
@@ -344,16 +343,14 @@ int enqueue(packet* pk) {
 		new_pk->next = &new_pk;
 		printf("[C] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head)->next)); /* XXX */
 		STRUCTURE.count = 1; /* We only have one packet in our data structure */
-	}
-	else {
-		/* Search if the packet belong to an old flow */
+	} else { /* Search if the packet belong to an old flow */
 		search_head = *(STRUCTURE.head);
 		do {
 			printf("GGG\n"); /* XXX */
 			printf("[D] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head)->next)); /* XXX */
 			if (same_flow(search_head, new_pk)) { /* If we found a flow that the new packet belongs to */
 				printf("JJJ\n"); /* XXX */
-								 /* Update the packet before and after to point on the new packet */
+				/* Update the packet before and after to point on the new packet */
 				(*search_head->prev)->next = &new_pk;
 				(*search_head->next)->prev = &new_pk;
 				/* Connect the new packet to the packets before and after */
@@ -372,7 +369,7 @@ int enqueue(packet* pk) {
 			}
 			search_head = *(search_head->next); /* Move our search head to the next element */
 		} while (search_head != *(STRUCTURE.head)); /* Until we complets a single round over the list */
-													/* Havn't found a flow that the new packet belongs to => Create a new one */
+		/* Havn't found a flow that the new packet belongs to => Create a new one */
 		new_pk->next = STRUCTURE.head;
 		new_pk->prev = (*STRUCTURE.head)->prev;
 		(*(*STRUCTURE.head)->prev)->next = &new_pk;
@@ -503,26 +500,29 @@ int main(int argc, char *argv[]) {
 								   * 3) A packet is sent only if there is enough credit.
 								   */
 								   /* Start the clock :) */
-	while (read_packet(last_packet, input_weight)) { /* while there are more packets in file */ /* TODO we will be needed to add check that we also finish to send everything */
-		printf("F_-3\n"); /* TODO XXX DEBUG DELME XXX */
-		if ((CLOCK < last_packet->Time) && (STRUCTURE.count > 0)) { /* The new packet is from the future */
-																	/* It's time to do some calculations */
-			printf("F_-2\n"); /* TODO XXX DEBUG DELME XXX */
-							  /*			if (send_packet(last_packet)) {*/
-							  /*				fprintf(stderr, F_ERROR_XXXXXX_FAILED_MSG);*/
-							  /*				return program_end(EXIT_FAILURE); / Error occurred in send_packet() /*/
-							  /*			}*/
-			return 0; /* TODO XXX DELME XXX TODO */
+	int readed = 0;
+	while ( (readed = read_packet(last_packet, input_weight)) || (STRUCTURE.count > 0) ) { /* while there are more packets in file */ /* TODO we will be needed to add check that we also finish to send everything */
+		if (readed = 0) {
+			last_packet->Time = LONG_MAX;
 		}
-		else { /* The packet is not from the future? How sad... */
-			printf("F_-1\n"); /* TODO XXX DEBUG DELME XXX */
+		if (readed && (last_packet->Time <= CLOCK)) {
 			if (enqueue(last_packet)) { /* Add the new packet to the data structure and keep reading for more packets with the same time */
 				fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
 				return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
 			}
-			print(); /* TODO XXX DELME XXX TODO */
+		} else {
+			while (last_packet->Time > CLOCK) {
+				if (STRUCTURE.count > 0){
+					CLOCK += send_packet();
+				} else {
+					CLOCK = last_packet->Time;
+				}
+			}
+			if (enqueue(last_packet)) { /* Add the new packet to the data structure and keep reading for more packets with the same time */
+				fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
+				return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
+			}
 		}
-		CLOCK = last_packet->Time; /* Adjust the clock */
 	}
 	/* Exit */
 	return program_end(EXIT_SUCCESS);
