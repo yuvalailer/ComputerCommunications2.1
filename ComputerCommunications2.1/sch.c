@@ -402,7 +402,7 @@ int dequeue(packet* pk) {
 			pk->next->prev = pk->prev;
 		}
 	}
-	free(pk);
+	//free(pk);
 	STRUCTURE.count--;
 	return 0;
 }
@@ -468,25 +468,30 @@ int send_packet() { /* TODO TODO TODO  Write to output file */
  */
 void print() {
 	packet* pkt = STRUCTURE.head;
-	printf("~~~START print~~~\n"); /* XXX */
-	printf("[A] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
-	printf("|========================================================================|\n");
-	printf("| Current time=%-20ld Number of waiting packets=%-10i |\n", CLOCK, STRUCTURE.count);
-	printf("|=========================|===========================|==================|\n");
-	do {
-		printf("| ID=%-20ld | Time=%-20ld | Sent=%5i/%-5i |\n", pkt->pktID, pkt->Time, pkt->start_byte, pkt->length);
-		pkt = pkt->next; /* Move to the next element */
-	} while (pkt != STRUCTURE.head); /* Until we complets a single round over the list */
-	printf("|=========================|===========================|==================|\n");
-	/*╔==================================╤=======================╤================╗*/
-	/*║               Col1               │         Col2          │      Col3      ║*/
-	/*╠==================================╪=======================╪================╣*/
-	/*║                                  │                       │                ║*/
-	/*║                                  │                       │                ║*/
-	/*║                                  │                       │                ║*/
-	/*╚==================================╧=======================╧================╝*/
-	if (STRUCTURE.head) { printf("[H] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
-	printf("~~~END print~~~\n"); /* XXX */
+	if (pkt == NULL) {
+		return;
+	}
+	else {
+		printf("~~~START print~~~\n"); /* XXX */
+		printf("[A] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
+		printf("|========================================================================|\n");
+		printf("| Current time=%-20ld Number of waiting packets=%-10i |\n", CLOCK, STRUCTURE.count);
+		printf("|=========================|===========================|==================|\n");
+		do {
+			printf("| ID=%-20ld | Time=%-20ld | Sent=%5i/%-5i |\n", pkt->pktID, pkt->Time, pkt->start_byte, pkt->length);
+			pkt = pkt->next; /* Move to the next element */
+		} while (pkt != STRUCTURE.head); /* Until we complets a single round over the list */
+		printf("|=========================|===========================|==================|\n");
+		/*╔==================================╤=======================╤================╗*/
+		/*║               Col1               │         Col2          │      Col3      ║*/
+		/*╠==================================╪=======================╪================╣*/
+		/*║                                  │                       │                ║*/
+		/*║                                  │                       │                ║*/
+		/*║                                  │                       │                ║*/
+		/*╚==================================╧=======================╧================╝*/
+		if (STRUCTURE.head) { printf("[H] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
+		printf("~~~END print~~~\n"); /* XXX */
+	}
 }
 /* int main(int argc, char *argv[]) { }
  *
@@ -586,7 +591,7 @@ int main(int argc, char *argv[]) {
 			fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
 			return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
 		}
-		print(); /* TODO DEBUG DELME XXX TODO */
+	//	print(); /* TODO DEBUG DELME XXX TODO */
 	}
 	/* Exit */
 	return program_end(EXIT_SUCCESS);
