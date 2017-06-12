@@ -338,12 +338,12 @@ int enqueue(packet* new_pk) {
 			printf("[D] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
 			if (same_flow(search_head, new_pk)) { /* If we found a flow that the new packet belongs to */
 				printf("JJJ\n"); /* XXX */
-				/* Update the packet before and after to point on the new packet */
-				(*search_head->prev).next = new_pk;
-				(*search_head->next).prev = new_pk;
 				/* Connect the new packet to the packets before and after */
 				new_pk->next = search_head->next;
 				new_pk->prev = search_head->prev;
+				/* Update the packet before and after to point on the new packet */
+				search_head->prev->next = new_pk;
+				search_head->next->prev = new_pk;
 				/* Disconect the old packet */
 				search_head->next = NULL;
 				search_head->prev = NULL;
@@ -372,22 +372,30 @@ int enqueue(packet* new_pk) {
 /* int dequeue(packet pk, packet* head_of_line) { }
 *
 * Receive ??? XXX ??? XXX
-* ??? XXX ??? XXX
-* Return ??? XXX ??? XXX
+* Remove packet from our data structure
+* Return 0 on success & 1 on failure
 */
-int dequeue(packet* pk, packet* head_of_line) { /* TODO TODO TODO Remove packet from our data structure */
-	if ((pk->next != NULL) && (pk->prev != NULL)) {
-		(*pk->next).prev = pk->prev;
-		(*pk->prev).next = pk->next;
+int dequeue(packet* pk) {
+	if ((pk->next == NULL) || (pk->prev == NULL) || (pk->up != NULL)) { /* Invalid dequeue request */
+		return 1;
 	}
-	if (head_of_line == pk) {
-		*head_of_line = NILL;
-	}
-	if (pk->up != NULL) {
-		(*pk->up).down = NULL;
+	if (STRUCTURE.count <= 1) { /* The last packet in our data structure */
+		STRUCTURE.head = NULL;
+		STRUCTURE.count = 0;
+	} else { /* Disconnect that node from the chain */
+		if (pk->down != NULL) { /* There are more packets in that flow */
+			pk->prev->next = pk->down; /* Move the next packet to be the upper one */
+			pk->next->prev = pk->down;
+			pk->down->next = pk->next;
+			pk->down->prev = pk->prev;
+			pk->down->up = NULL;
+		} else {/* There are no more packets in that flow */
+			pk->prev->next = pk->next;
+			pk->next->prev = pk->prev;
+		}
 	}
 	free(pk);
-	return 0; /* TODO TODO TODO Return 0 on success & 1 on failure */
+	return 0;
 }
 /* void print() { }
 *
