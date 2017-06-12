@@ -298,8 +298,14 @@ int same_flow(packet* pacA, packet* pacB) {
 	printf("[E] Pointers: [pacA]%p [pacB]%p\n", (void *)pacA, (void *)pacB); /* XXX */
 	printf("[C] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", pacA->pktID, pacA->Time, pacA->Sadd, pacA->Sport, pacA->Dadd, pacA->Dport, pacA->length, pacA->weight); /* TODO DEBUG XXX DELME XXX XXX */
 	printf("[D] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", pacB->pktID, pacB->Time, pacB->Sadd, pacB->Sport, pacB->Dadd, pacB->Dport, pacB->length, pacB->weight); /* TODO DEBUG XXX DELME XXX XXX */
-	if ((strncmp(pacA->Sadd, pacB->Sadd, 15)) &&
-		(strncmp(pacA->Dadd, pacB->Dadd, 15)) &&
+	
+	printf("%d ", !strncmp(pacA->Sadd, pacB->Sadd, 15));
+	printf("%d ", !strncmp(pacA->Dadd, pacB->Dadd, 15));
+	printf("%d ", (pacA->Sport == pacB->Sport));
+	printf("%d \n", (pacA->Dport == pacB->Dport));
+
+	if ((!strncmp(pacA->Sadd, pacB->Sadd, 15)) &&
+		(!strncmp(pacA->Dadd, pacB->Dadd, 15)) &&
 		(pacA->Sport == pacB->Sport) &&
 		(pacA->Dport == pacB->Dport)) {
 		printf("III_1\n"); /* XXX */
@@ -403,6 +409,7 @@ packet* find_packet() {
 	packet* search_head = STRUCTURE.head;
 		do {	
 			if ( same_flow(search_head, STRUCTURE.flow_pk) ) { /* head points to a packet from the correct flow */
+			//if (search_head == STRUCTURE.flow_pk ) { /* head points to a packet from the correct flow */
 				if( search_head->down == NULL ){ /* no more pakets on flow */
 					if(search_head->next != search_head){ /* not last one on the stractue */
 						copy_packet(search_head->next, STRUCTURE.flow_pk);
@@ -524,7 +531,7 @@ int main(int argc, char *argv[]) {
 	}
 	/* Check quantum => argv[5] */
 	if ((res = convert_strin2long(argv[5], &temp, 0, INT_MAX, F_ERROR_QUANTUM_INVALID_MSG)) > 0) {
-		return program_end(res); /* Error occurred, Exit */
+ 		return program_end(res); /* Error occurred, Exit */
 	}
 	else {
 		QUANTUM = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
