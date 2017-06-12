@@ -48,6 +48,8 @@ long CLOCK = LONG_MIN;		/* The current time */
 structure STRUCTURE;		/* Our data structure */
 packet NILL;			/* NULL packet */
 
+int input_quantum = 0;		/* The quantum */
+
 						/* int program_end(int error) { }
 						*
 						* Receive exit code,
@@ -257,15 +259,6 @@ int read_packet(packet* pk, int default_weight) {
 		return 0; /* EOF */
 	}
 }
-/* int send_packet(packet pk) { }
-*
-* Receive ??? XXX ??? XXX
-* ??? XXX ??? XXX
-* Return ??? XXX ??? XXX
-*/
-int send_packet() { /* TODO TODO TODO  Write to output file */
-	return 0; /* TODO TODO TODO Return 0 on success & 1 on failure */
-}
 /* void copy_packet(packet* src, packet* dst) { }
 *
 * Receive pointers of two packets
@@ -397,6 +390,42 @@ int dequeue(packet* pk) {
 	free(pk);
 	return 0;
 }
+
+
+packet* find_packet() {
+	STRUCTURE.head;
+	//TODO
+}
+
+
+
+
+/* int send_packet(packet pk) { }
+*
+* Receive ??? XXX ??? XXX
+* ??? XXX ??? XXX
+* Return ??? XXX ??? XXX
+*/
+int send_packet() { /* TODO TODO TODO  Write to output file */
+	
+	/* find the pacekt to be sent*/
+	packet* pk = find_packet();
+	
+	int return_time = (int)(pk->length) / input_quantum;
+	printf("%d",return_time); /* TODO XXX DELME XXX TODO */
+	/* send packet */
+	// TODO write to file
+	
+	/* move weight up */
+	if(pk->up != NULL){
+		(*pk->up).weight = pk->weight;
+	}
+
+	/* delete packet */
+	dequeue(pk,pk);
+		return return_time; /* TODO TODO TODO Return 0 on success & 1 on failure */
+}
+
 /* void print() { }
 *
 * Print the packets in line
@@ -434,7 +463,6 @@ void print() {
 int main(int argc, char *argv[]) {
 	/* Function variables */
 	char errmsg[256];		/* The message to print in case of an error */
-	int input_quantum = 0;		/* The quantum */
 	int input_weight = 0;		/* The weight */
 	int res = 0;			/* Temporary variable to store function response */
 	long temp = 0;			/* Temporary variable */
