@@ -26,6 +26,8 @@
 typedef struct DataStructure {
 	struct Packets* head;	/* Pointer to the head of the round double linked list */
 	int count;		/* The total number of packets, Need to be updated in every insert & delete */
+	int same_flow_send_cont; /* the number of packets sent from a sertn flow  */
+	struct Packets* flow_pk; /* a pointer to a pk for 'same_flow' use perpose */ 
 } structure;
 typedef struct Packets {
 	long pktID;		/* Unique ID (long int [-9223372036854775808,9223372036854775807]) */
@@ -393,12 +395,21 @@ int dequeue(packet* pk) {
 
 
 packet* find_packet() {
-	STRUCTURE.head;
-	//TODO
+	packet* search_head = STRUCTURE.head;
+	packet* return_packet = malloc(sizeof(packet)); //TODO to be freed in send. 
+	if (STRUCTURE.same_flow_send_cont != -1) { /* there are more packets to be sent from the flow */
+		if( same_flow(search_head,STRUCTURE.flow_pk) ){
+			
+		}
+		do {
+				
+		} while(search_head != STRUCTURE.head);
+		/* finished loop and no such flow */
+
+	}
+
+
 }
-
-
-
 
 /* int send_packet(packet pk) { }
 *
@@ -468,6 +479,8 @@ int main(int argc, char *argv[]) {
 	long temp = 0;			/* Temporary variable */
 	packet* last_packet;		/* Temporary variable for the last readed packet from the input file */
 								/* Check correct call structure */
+	packet* comper_packet; /* packet for same_flow perposes */
+
 	if (argc != 6) {
 		if (argc < 6) {
 			printf(USAGE_OPERANDS_MISSING_MSG, argv[0]);
@@ -511,6 +524,10 @@ int main(int argc, char *argv[]) {
 	/* Init variables */
 	STRUCTURE.head = NULL;
 	STRUCTURE.count = 0;
+	STRUCTURE.same_flow_send_cont = 0;
+	comper_packet = malloc(sizeof(packet)); /* TODO free memory & allocation check */
+	STRUCTURE.flow_pk = comper_packet;
+
 	last_packet = malloc(sizeof(packet)); /* TODO free memory & allocation check */
 	input_quantum = input_weight; /* TODO XXX DELME XXX TODO */
 	input_quantum = input_quantum; /* TODO XXX DELME XXX TODO */
