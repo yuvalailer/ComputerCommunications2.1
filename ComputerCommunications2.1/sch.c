@@ -290,6 +290,9 @@ void write_packet(packet* pk) {
  * Return 0 o.w
  */
 int same_flow(packet* pacA, packet* pacB) {
+	if ((STRUCTURE.count == 4) && (STRUCTURE.head->pktID == 8)) { /* TODO XXX DELME XXX */
+		printf("TODO DEBUG DELME XXX\n");/* TODO XXX DELME XXX */
+	} /* TODO XXX DELME XXX */
 	printf("~~~START same_flow~~~\n"); /* XXX */
 	printf("HHH\n"); /* XXX */
 	printf("[E] Pointers: [pacA]%p [pacB]%p\n", (void *)pacA, (void *)pacB); /* XXX */
@@ -354,6 +357,9 @@ int enqueue(packet* new_pk) {
 				if (STRUCTURE.head == search_head) {
 					STRUCTURE.head = new_pk;
 				}
+				if (STRUCTURE.flow_pk->pktID == search_head->pktID) {
+					STRUCTURE.flow_pk = new_pk;
+				}
 				/* Finish */
 				STRUCTURE.count++; /* We added one packet to the data structure */
 				printf("~~~END enqueue~~~\n"); /* XXX */
@@ -414,9 +420,13 @@ int dequeue(packet* pk) {
  * Return ??? XXX ??? XXX
  */
 packet* find_packet() {
+	if ((STRUCTURE.count == 4) && (STRUCTURE.head->pktID == 8)) { /* TODO XXX DELME XXX */
+		printf("TODO DEBUG DELME XXX\n");/* TODO XXX DELME XXX */
+	} /* TODO XXX DELME XXX */
 	packet* search_head = STRUCTURE.head;
 	do {
 		if (same_flow(search_head, STRUCTURE.flow_pk)) { /* Head points to a packet from the correct flow */
+			printf("[1/3] search_head->pktID %d\n", search_head->pktID); /* TODO XXX DELME */
 			if (search_head->down == NULL) { /* No more pakets on flow */
 				if (search_head->next != search_head){ /* Not last one on the stractue */
 					STRUCTURE.flow_pk = search_head->next;
@@ -426,16 +436,17 @@ packet* find_packet() {
 					search_head = search_head->down;
 				}
 			}
-			printf("search_head->weight %d\n", search_head->weight);
+			printf("[2/3] search_head->pktID %d\n", search_head->pktID); /* TODO XXX DELME */
 			if (search_head->weight >= STRUCTURE.same_flow_send_count) { /* Sent less then requested by flow. */
 				STRUCTURE.same_flow_send_count++;
 				return  search_head;
 			} else { /* Already sent more then enagth */
-				if (search_head->next != search_head) { /* Not last one on the stractue */
-					STRUCTURE.flow_pk = search_head->next;
-				}
+				/*if (STRUCTURE.flow_pk->next != STRUCTURE.flow_pk) { /* Not last one on the stractue */
+				STRUCTURE.flow_pk = STRUCTURE.flow_pk->next;
+				/*}*/
 				STRUCTURE.same_flow_send_count = 0;
 			}
+			printf("[3/3] search_head->pktID %d\n", search_head->pktID); /* TODO XXX DELME */
 		}
 		search_head = search_head->next;
 	} while (1);
