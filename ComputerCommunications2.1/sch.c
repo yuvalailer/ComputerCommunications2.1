@@ -4,60 +4,71 @@
 #include <stdlib.h>	/* EXIT_FAILURE, EXIT_SUCCESS, NULL, strtol */
 #include <string.h>	/* strncmp, //strerror_r */
 
-#define USAGE_OPERANDS_MISSING_MSG	"Missing operands\nUsage: %s <TYPE [RR/DRR]> <INPUT FILE> <OUTPUT FILE> <WEIGHT> <QUANTUM>\n"
-#define USAGE_OPERANDS_SURPLUS_MSG	"Too many operands\nUsage: %s <TYPE [RR/DRR]> <INPUT FILE> <OUTPUT FILE> <WEIGHT> <QUANTUM>\n"
-#define ERROR_EXIT_MSG			"Exiting...\n"
-#define F_ERROR_ENQUEUE_FAILED_MSG	"[Error] Program failed to enqueue packed ID: %ld\n"
+#define USAGE_OPERANDS_MISSING_MSG		"Missing operands\nUsage: %s <TYPE [RR/DRR]> <INPUT FILE> <OUTPUT FILE> <WEIGHT> <QUANTUM>\n"
+#define USAGE_OPERANDS_SURPLUS_MSG		"Too many operands\nUsage: %s <TYPE [RR/DRR]> <INPUT FILE> <OUTPUT FILE> <WEIGHT> <QUANTUM>\n"
+#define ERROR_EXIT_MSG					"Exiting...\n"
+#define F_ERROR_ENQUEUE_FAILED_MSG		"[Error] Program failed to enqueue packed ID: %ld\n"
 #define F_ERROR_FUNCTION_SPRINTF_MSG	"[Error] sprintf() failed with an error\n"
-#define F_ERROR_FUNCTION_STRTOL_MSG	"[Error] strtol() failed with an error: %s\n"
-#define F_ERROR_INPUT_CLOSE_MSG		"[Error] Close input file: %s\n"
-#define F_ERROR_INPUT_FILE_MSG		"[Error] Input file '%s': %s\n"
-#define F_ERROR_IP_INVALID_MSG		"[Error] The ip address %s is not a valid IPv4\n"
-#define F_ERROR_LENGTH_INVALID_MSG	"[Error] The length '%s' is not a number between 64 to 16384\n"
-#define F_ERROR_OUTPUT_CLOSE_MSG	"[Error] Close output file: %s\n"
-#define F_ERROR_OUTPUT_FILE_MSG		"[Error] Output file '%s': %s\n"
-#define F_ERROR_QUANTUM_INVALID_MSG	"[Error] The quantum '%s' is not non negative integer\n"
-#define F_ERROR_PKTID_INVALID_MSG	"[Error] The packet ID '%s' is not a valid long integer\n"
-#define F_ERROR_PORT_INVALID_MSG	"[Error] The port '%s' is not a number between 0 to 65535\n"
-#define F_ERROR_TIME_INVALID_MSG	"[Error] The time '%s' is not a valid long integer\n"
-#define F_ERROR_TYPE_MSG		"[Error] The only valid types are RR and DRR\n"
-#define F_ERROR_WEIGHT_INVALID_MSG	"[Error] The weight '%s' is not a positive integer\n"
+#define F_ERROR_FUNCTION_STRTOL_MSG		"[Error] strtol() failed with an error: %s\n"
+#define F_ERROR_INPUT_CLOSE_MSG			"[Error] Close input file: %s\n"
+#define F_ERROR_INPUT_FILE_MSG			"[Error] Input file '%s': %s\n"
+#define F_ERROR_IP_INVALID_MSG			"[Error] The ip address %s is not a valid IPv4\n"
+#define F_ERROR_LENGTH_INVALID_MSG		"[Error] The length '%s' is not a number between 64 to 16384\n"
+#define F_ERROR_OUTPUT_CLOSE_MSG		"[Error] Close output file: %s\n"
+#define F_ERROR_OUTPUT_FILE_MSG			"[Error] Output file '%s': %s\n"
+#define F_ERROR_QUANTUM_INVALID_MSG		"[Error] The quantum '%s' is not non negative integer\n"
+#define F_ERROR_PKTID_INVALID_MSG		"[Error] The packet ID '%s' is not a valid long integer\n"
+#define F_ERROR_PORT_INVALID_MSG		"[Error] The port '%s' is not a number between 0 to 65535\n"
+#define F_ERROR_TIME_INVALID_MSG		"[Error] The time '%s' is not a valid long integer\n"
+#define F_ERROR_TYPE_MSG				"[Error] The only valid types are RR and DRR\n"
+#define F_ERROR_WEIGHT_INVALID_MSG		"[Error] The weight '%s' is not a positive integer\n"
 
 typedef struct DataStructure {
 	struct Packets* head;	/* Pointer to the head of the round double linked list */
 	int count;		/* The total number of packets, Need to be updated in every insert & delete */
-	int same_flow_send_cont; /* the number of packets sent from a sertn flow  */
+	int same_flow_send_count; /* the number of packets sent from a certain flow  */
 	struct Packets* flow_pk; /* a pointer to a pk for 'same_flow' use perpose */ 
 } structure;
 typedef struct Packets {
-	long pktID;		/* Unique ID (long int [-9223372036854775808,9223372036854775807]) */
-	long Time;		/* Arrival time (long int [-9223372036854775808,9223372036854775807]) */
-	char Sadd[15];		/* Source ip address (string Ex. '192.168.0.1') */
-	int Sport;		/* Source port (int [0,65535]) */
-	char Dadd[15];		/* Destination ip address (string Ex. '192.168.0.1') */
-	int Dport;		/* Destination port (int [0,65535]) */
-	int length;		/* Packet length (int [64,16384]) */
-	int weight;		/* Flow weight (int [1,2147483647]) */
-	int start_byte;		/* From were shold next transmition Start*/
+	long pktID;				/* Unique ID (long int [-9223372036854775808,9223372036854775807]) */
+	long Time;				/* Arrival time (long int [-9223372036854775808,9223372036854775807]) */
+	char Sadd[15];			/* Source ip address (string Ex. '192.168.0.1') */
+	int Sport;				/* Source port (int [0,65535]) */
+	char Dadd[15];			/* Destination ip address (string Ex. '192.168.0.1') */
+	int Dport;				/* Destination port (int [0,65535]) */
+	int length;				/* Packet length (int [64,16384]) */
+	int weight;				/* Flow weight (int [1,2147483647]) */
+	int start_byte;			/* From were shold next transmition Start*/
 	struct Packets* next;	/* Pointer to next packet in the list */
 	struct Packets* prev;	/* Pointer to previously packet in the list */
-	struct Packets* up;	/* Pointer to upper packet in the queue */
+	struct Packets* up;		/* Pointer to upper packet in the queue */
 	struct Packets* down;	/* Pointer to lower packet in the queue */
 } packet;
 FILE* IN_FILE = NULL;		/* The input file */
 FILE* OUT_FILE = NULL;		/* The output file */
+int QUANTUM = 0;			/* The quantum */
 long CLOCK = LONG_MIN;		/* The current time */
 structure STRUCTURE;		/* Our data structure */
-packet NILL;			/* NULL packet */
 
-int input_quantum = 0;		/* The quantum */
+int program_end(int error);								/* Close gracefully everything */
+int validate_IPv4(const char *s);						/* Verify that the string is valid IPv4 */
+int convert_strin2long(char *input, long *output, long from, long to, char *error_string);	/* Convert the string to int */
+int read_packet(packet* pk, int default_weight);		/* Read one line from the input file and parse her */
+void copy_packet(packet* src, packet* dst);				/* Copy the content of the source packet to the destination packet */
+int same_flow(packet* pacA, packet* pacB);				/* Check if two packets belong to the same flow */
+int enqueue(packet* new_pk);							/* Add packet to our data structure */
+int dequeue(packet* pk);								/* Remove packet from our data structure */
+packet* find_packet();									/* xxxxxxxxxxxxx */
+int send_packet();										/* xxxxxxxxxxxxx */
+void print();											/* Print the packets in line */
+int main(int argc, char *argv[]);						/* Simulate round robin algorithm */
 
-						/* int program_end(int error) { }
-						*
-						* Receive exit code,
-						* Close gracefully everything,
-						* Return exit code,
-						*/
+/* int program_end(int error) { }
+ *
+ * Receive exit code,
+ * Close gracefully everything,
+ * Return exit code,
+ */
 int program_end(int error) {
 	char errmsg[256];
 	int res = 0;
@@ -79,12 +90,13 @@ int program_end(int error) {
 	}
 	return res;
 }
-/* validate_IPv4(const char *s) { }
-*
-* Receive string,
-* Return 0 if input is a valid IPv4 address,
-* return -1 otherwise
-*/
+/* intvalidate_IPv4(const char *s) { }
+ *
+ * Receive string,
+ * Verify that the string is valid IPv4
+ * Return 0 if input is a valid IPv4 address,
+ * return -1 otherwise
+ */
 int validate_IPv4(const char *s) { /* http://stackoverflow.com/questions/791982/determine-if-a-string-is-a-valid-ip-address-in-c#answer-14181669 */
 	char tail[16];
 	int c, i;
@@ -105,16 +117,16 @@ int validate_IPv4(const char *s) { /* http://stackoverflow.com/questions/791982/
 	}
 	return 0;
 }
-/* int convert_strin2long(char *input, int *output) { }
-*
-* Receive:	input string
-* 		pointer where to save the output int
-* 		limitation (included).on the int range
-* 		message to print in case of an error
-* Convert the string to int
-* Return 0 if succeed,
-* Return errno if error occurred.
-*/
+/* int convert_strin2long(char *input, long *output, long from, long to, char *error_string) { }
+ *
+ * Receive:	input string
+ * 		pointer where to save the output int
+ * 		limitation (included).on the int range
+ * 		message to print in case of an error
+ * Convert the string to int
+ * Return 0 if succeed,
+ * Return errno if error occurred.
+ */
 int convert_strin2long(char *input, long *output, long from, long to, char *error_string) { /* https://linux.die.net/man/3/strtol */
 																							/* Function variables */
 	char errmsg[256];	/* The message to print in case of an error */
@@ -141,13 +153,13 @@ int convert_strin2long(char *input, long *output, long from, long to, char *erro
 	}
 	return EXIT_SUCCESS;
 }
-/* int read_packet(packet* pk, int* total_num) { }
-*
-* Receive packet object and the default weight
-* Read one line from the input file and parse her
-* Return 1 if read succeed,
-* Return 0 in case EOF reached or if an error occurred.
-*/
+/* int read_packet(packet* pk, int default_weight) { }
+ *
+ * Receive packet object and the default weight
+ * Read one line from the input file and parse her
+ * Return 1 if read succeed,
+ * Return 0 in case EOF reached or if an error occurred.
+ */
 int read_packet(packet* pk, int default_weight) {
 	/* Function variables */
 	char line[105];	/* 105 == pktID[20]+Time[20]+Sadd[15]+Sport[5]+Dadd[15]+Dport[5]+length[5]+weight[11]+spaces[7]+"\r\n"[2] */
@@ -262,10 +274,10 @@ int read_packet(packet* pk, int default_weight) {
 	}
 }
 /* void copy_packet(packet* src, packet* dst) { }
-*
-* Receive pointers of two packets
-* Copy the content of the source packet to the destination packet
-*/
+ *
+ * Receive pointers of two packets
+ * Copy the content of the source packet to the destination packet
+ */
 void copy_packet(packet* src, packet* dst) {
 	printf("~~~START copy_packet~~~\n"); /* XXX */
 	dst->pktID = src->pktID;
@@ -285,12 +297,12 @@ void copy_packet(packet* src, packet* dst) {
 	return;
 }
 /* int same_flow(packet* pacA, packet* pacB) { }
-*
-* Receive pointer of two packets
-* Check if they belong to the same flow
-* Return 1 if both packets have the same source and destination (IP&port)
-* Return 0 o.w
-*/
+ *
+ * Receive pointer of two packets
+ * Check if they belong to the same flow
+ * Return 1 if both packets have the same source and destination (IP&port)
+ * Return 0 o.w
+ */
 int same_flow(packet* pacA, packet* pacB) {
 	printf("~~~START same_flow~~~\n"); /* XXX */
 	printf("HHH\n"); /* XXX */
@@ -310,15 +322,15 @@ int same_flow(packet* pacA, packet* pacB) {
 	return 0;
 }
 /* int enqueue(packet* pk) { }
-*
-* Receive packet
-* Add the packet to our data structure
-* Return 0 on success and 1 in case of an error
-*/
+ *
+ * Receive packet
+ * Add the packet to our data structure
+ * Return 0 on success and 1 in case of an error
+ */
 int enqueue(packet* new_pk) {
 	/* Function variables */
 	packet* search_head = NULL; /* Pointer to the current element in our round double linked list */
-								/* Init the new packet */
+	/* Init the new packet */
 	if (STRUCTURE.head) { printf("[F] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
 	if (STRUCTURE.head == NULL) { /* This is the first packet in our data structure */
 		STRUCTURE.head = new_pk; /* The new packet is our new head */
@@ -363,13 +375,12 @@ int enqueue(packet* new_pk) {
 	printf("~~~END enqueue~~~\n"); /* XXX */
 	return 0;
 }
-
-/* int dequeue(packet pk, packet* head_of_line) { }
-*
-* Receive ??? XXX ??? XXX
-* Remove packet from our data structure
-* Return 0 on success & 1 on failure
-*/
+/* int dequeue(packet* pk) { }
+ *
+ * Receive pointer to the packet that need to be removed
+ * Remove packet from our data structure
+ * Return 0 on success & 1 on failure
+ */
 int dequeue(packet* pk) {
 	if ((pk->next == NULL) || (pk->prev == NULL) || (pk->up != NULL)) { /* Invalid dequeue request */
 		return 1;
@@ -392,12 +403,16 @@ int dequeue(packet* pk) {
 	free(pk);
 	return 0;
 }
-
-
+/* packet* find_packet() { }
+ *
+ * Receive ??? XXX ??? XXX
+ * ??? XXX ??? XXX
+ * Return ??? XXX ??? XXX
+ */
 packet* find_packet() {
 	packet* search_head = STRUCTURE.head;
 	packet* return_packet = malloc(sizeof(packet)); //TODO to be freed in send. 
-	if (STRUCTURE.same_flow_send_cont != -1) { /* there are more packets to be sent from the flow */
+	if (STRUCTURE.same_flow_send_count != -1) { /* there are more packets to be sent from the flow */
 		if( same_flow(search_head,STRUCTURE.flow_pk) ){
 			
 		}
@@ -410,38 +425,32 @@ packet* find_packet() {
 
 
 }
-
-/* int send_packet(packet pk) { }
-*
-* Receive ??? XXX ??? XXX
-* ??? XXX ??? XXX
-* Return ??? XXX ??? XXX
-*/
+/* int send_packet() { }
+ *
+ * Receive ??? XXX ??? XXX
+ * ??? XXX ??? XXX
+ * Return ??? XXX ??? XXX
+ */
 int send_packet() { /* TODO TODO TODO  Write to output file */
-	
 	/* find the pacekt to be sent*/
 	packet* pk = find_packet();
-	
-	int return_time = (int)(pk->length) / input_quantum;
+	int return_time = (int)((pk->length) / QUANTUM);
 	printf("%d",return_time); /* TODO XXX DELME XXX TODO */
 	/* send packet */
-	// TODO write to file
-	
+	/* TODO write to file */
 	/* move weight up */
 	if(pk->up != NULL){
 		(*pk->up).weight = pk->weight;
 	}
-
 	/* delete packet */
-	dequeue(pk,pk);
-		return return_time; /* TODO TODO TODO Return 0 on success & 1 on failure */
+	dequeue(pk);
+	return return_time;
 }
-
 /* void print() { }
-*
-* Print the packets in line
-* For debugging and support use only!!!
-*/
+ *
+ * Print the packets in line
+ * For debugging and support use only!!!
+ */
 void print() {
 	packet* pkt = STRUCTURE.head;
 	printf("~~~START print~~~\n"); /* XXX */
@@ -466,11 +475,11 @@ void print() {
 	printf("~~~END print~~~\n"); /* XXX */
 }
 /* int main(int argc, char *argv[]) { }
-*
-* Receive command line arguments
-* Simulate round robin algorithm
-* Return the program exit code
-*/
+ *
+ * Receive command line arguments
+ * Simulate round robin algorithm
+ * Return the program exit code
+ */
 int main(int argc, char *argv[]) {
 	/* Function variables */
 	char errmsg[256];		/* The message to print in case of an error */
@@ -519,18 +528,18 @@ int main(int argc, char *argv[]) {
 		return program_end(res); /* Error occurred, Exit */
 	}
 	else {
-		input_quantum = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
+		QUANTUM = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
 	}
 	/* Init variables */
 	STRUCTURE.head = NULL;
 	STRUCTURE.count = 0;
-	STRUCTURE.same_flow_send_cont = 0;
+	STRUCTURE.same_flow_send_count = 0;
 	comper_packet = malloc(sizeof(packet)); /* TODO free memory & allocation check */
 	STRUCTURE.flow_pk = comper_packet;
 
 	last_packet = malloc(sizeof(packet)); /* TODO free memory & allocation check */
-	input_quantum = input_weight; /* TODO XXX DELME XXX TODO */
-	input_quantum = input_quantum; /* TODO XXX DELME XXX TODO */
+	QUANTUM = input_weight; /* TODO XXX DELME XXX TODO */
+	QUANTUM = QUANTUM; /* TODO XXX DELME XXX TODO */
 								   /* Weighted Round Robin
 								   * 1) If total weights is W, it takes W rounds to complete a cycle.
 								   * 2) Each flow i transmits w[i] packets in a cycle.
