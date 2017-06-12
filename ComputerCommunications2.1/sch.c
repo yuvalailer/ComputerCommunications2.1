@@ -169,6 +169,7 @@ int read_packet(packet* pk, int default_weight) {
 	long temp = 0;	/* Temporary variable */
 	/* Function body */
 	if ((fgets(line, sizeof(line), IN_FILE)) && (strlen(line) > 26)) { /* return s on success, and NULL on error or when end of file occurs while no characters have been read. */
+		pk->weight = default_weight; /* Use the default weight */
 		count = 0; /* Init the counter */
 		word = strtok(line, " ");
 		while (word != NULL) {
@@ -231,8 +232,6 @@ int read_packet(packet* pk, int default_weight) {
 					return 0; /* Error occurred, Exit */
 				} else if (temp) { /* There was a value for weight in the input file */
 					pk->weight = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
-				} else {
-					pk->weight = default_weight; /* Use the default weight */
 				}
 			} else {
 				return 0; /* Invalid input, Length is too long */
@@ -407,27 +406,31 @@ int dequeue(packet* pk) {
  */
 packet* find_packet() {
 	packet* search_head = STRUCTURE.head;
-		do {	
-			if ( same_flow(search_head, STRUCTURE.flow_pk) ) { /* head points to a packet from the correct flow */
-			//if (search_head == STRUCTURE.flow_pk ) { /* head points to a packet from the correct flow */
-				if( search_head->down == NULL ){ /* no more pakets on flow */
-					if(search_head->next != search_head){ /* not last one on the stractue */
-						copy_packet(search_head->next, STRUCTURE.flow_pk);
-					}
+	do {
+		if (same_flow(search_head, STRUCTURE.flow_pk)) { /* Head points to a packet from the correct flow */
+			if (search_head->down == NULL) { /* No more pakets on flow */
+				if (search_head->next != search_head){ /* Not last one on the stractue */
+					STRUCTURE.flow_pk = search_head->next;
 				}
-				if( search_head->weight >= STRUCTURE.same_flow_send_count) { /* sent less then requested by flow. */
-					STRUCTURE.same_flow_send_count++;
-					return  search_head;
-				} else { /* already sent more then enagth */ 
-					if (search_head->next != search_head) { /* not last one on the stractue */
-						copy_packet(search_head->next, STRUCTURE.flow_pk);
-					}
-					STRUCTURE.same_flow_send_count = 0;
+			} else {
+				while (search_head->down != NULL) {
+					search_head = search_head->down;
 				}
 			}
-			search_head = search_head->next;
-		} while (1);
-		//} while(search_head != STRUCTURE.head);
+			printf("search_head->weight %d\n", search_head->weight);
+			if (search_head->weight >= STRUCTURE.same_flow_send_count) { /* Sent less then requested by flow. */
+				STRUCTURE.same_flow_send_count++;
+				return  search_head;
+			} else { /* Already sent more then enagth */
+				if (search_head->next != search_head) { /* Not last one on the stractue */
+					STRUCTURE.flow_pk = search_head->next;
+				}
+				STRUCTURE.same_flow_send_count = 0;
+			}
+		}
+		search_head = search_head->next;
+	} while (1);
+	//} while(search_head != STRUCTURE.head);
 }
 /* int send_packet() { }
  *
