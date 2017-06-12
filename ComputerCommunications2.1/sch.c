@@ -38,7 +38,6 @@ typedef struct Packets {
 	int Dport;				/* Destination port (int [0,65535]) */
 	int length;				/* Packet length (int [64,16384]) */
 	int weight;				/* Flow weight (int [1,2147483647]) */
-	int start_byte;			/* From were shold next transmition Start*/
 	struct Packets* next;	/* Pointer to next packet in the list */
 	struct Packets* prev;	/* Pointer to previously packet in the list */
 	struct Packets* up;		/* Pointer to upper packet in the queue */
@@ -243,7 +242,6 @@ int read_packet(packet* pk, int default_weight) {
 			return 0; /* Invalid input, Length is too short */
 		}
 		printf("[A] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", pk->pktID, pk->Time, pk->Sadd, pk->Sport, pk->Dadd, pk->Dport, pk->length, pk->weight); /* TODO DEBUG XXX DELME XXX XXX */
-		pk->start_byte = 0; /* From were should next transmition Start */
 		pk->next = NULL; /* Pointer to next packet in the list */
 		pk->prev = NULL; /* Pointer to prev packet in the list */
 		pk->up = NULL; /* Pointer to upper packet in the queue */
@@ -268,7 +266,6 @@ void copy_packet(packet* src, packet* dst) {
 	dst->Dport = src->Dport;
 	dst->length = src->length;
 	dst->weight = src->weight;
-	dst->start_byte = src->start_byte;
 	dst->next = src->next;
 	dst->prev = src->prev;
 	dst->up = src->up;
@@ -353,6 +350,10 @@ int enqueue(packet* new_pk) {
 				/* Connect the old and the new packets with the up/down pointers */
 				new_pk->down = search_head;
 				search_head->up = new_pk;
+				/* Was he the head? */
+				if (STRUCTURE.head == search_head) {
+					STRUCTURE.head = new_pk;
+				}
 				/* Finish */
 				STRUCTURE.count++; /* We added one packet to the data structure */
 				printf("~~~END enqueue~~~\n"); /* XXX */
@@ -402,7 +403,7 @@ int dequeue(packet* pk) {
 			pk->next->prev = pk->prev;
 		}
 	}
-	//free(pk);
+	/*free(pk); /* TODO TODO TODO WTF??? */
 	STRUCTURE.count--;
 	return 0;
 }
@@ -468,17 +469,20 @@ int send_packet() { /* TODO TODO TODO  Write to output file */
  */
 void print() {
 	packet* pkt = STRUCTURE.head;
-	if (pkt == NULL) {
-		return;
-	}
-	else {
+	packet* dive_in;
+	if (pkt) {
 		printf("~~~START print~~~\n"); /* XXX */
 		printf("[A] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
 		printf("|========================================================================|\n");
 		printf("| Current time=%-20ld Number of waiting packets=%-10i |\n", CLOCK, STRUCTURE.count);
 		printf("|=========================|===========================|==================|\n");
 		do {
-			printf("| ID=%-20ld | Time=%-20ld | Sent=%5i/%-5i |\n", pkt->pktID, pkt->Time, pkt->start_byte, pkt->length);
+			printf("| ID=%-20ld | Time=%-20ld | Length=%-5i     |\n", pkt->pktID, pkt->Time, pkt->length);
+			dive_in = pkt->down;
+			while (dive_in) {
+				printf("|==ID=%-20ld| Time=%-20ld | Length=%-5i     |\n", dive_in->pktID, dive_in->Time, dive_in->length);
+				dive_in = dive_in->down;
+			}
 			pkt = pkt->next; /* Move to the next element */
 		} while (pkt != STRUCTURE.head); /* Until we complets a single round over the list */
 		printf("|=========================|===========================|==================|\n");
@@ -591,7 +595,7 @@ int main(int argc, char *argv[]) {
 			fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
 			return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
 		}
-	//	print(); /* TODO DEBUG DELME XXX TODO */
+		print(); /* TODO DEBUG DELME XXX TODO */
 	}
 	/* Exit */
 	return program_end(EXIT_SUCCESS);
