@@ -385,17 +385,24 @@ int dequeue(packet* pk) {
 		STRUCTURE.count = 0;
 	} else { /* Disconnect that node from the chain */
 		if (pk->down != NULL) { /* There are more packets in that flow */
+			if (STRUCTURE.head == pk) {
+				STRUCTURE.head = pk->down;
+			}
 			pk->prev->next = pk->down; /* Move the next packet to be the upper one */
 			pk->next->prev = pk->down;
 			pk->down->next = pk->next;
 			pk->down->prev = pk->prev;
 			pk->down->up = NULL;
 		} else {/* There are no more packets in that flow */
+			if (STRUCTURE.head == pk) {
+				STRUCTURE.head = pk->next;
+			}
 			pk->prev->next = pk->next;
 			pk->next->prev = pk->prev;
 		}
 	}
 	free(pk);
+	STRUCTURE.count--;
 	return 0;
 }
 /* packet* find_packet() { }
