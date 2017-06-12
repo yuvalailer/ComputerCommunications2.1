@@ -282,7 +282,8 @@ void copy_packet(packet* src, packet* dst) {
  * Write the packet ID to the output file
  */
 void write_packet(packet* pk) {
-	fprintf(OUT_FILE, "%ld: %ld\n", CLOCK, pk->pktID);
+	fprintf(OUT_FILE, "%ld: %ld\r\n", CLOCK, pk->pktID);
+	fflush(OUT_FILE);
 }
 /* int same_flow(packet* pacA, packet* pacB) { }
  *
