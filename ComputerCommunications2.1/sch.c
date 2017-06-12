@@ -44,6 +44,7 @@ typedef struct Packets {
 	struct Packets* up;		/* Pointer to upper packet in the queue */
 	struct Packets* down;	/* Pointer to lower packet in the queue */
 } packet;
+char TYPE[4];				/* RR or DRR */
 FILE* IN_FILE = NULL;		/* The input file */
 FILE* OUT_FILE = NULL;		/* The output file */
 int QUANTUM = 0;			/* The quantum */
@@ -492,13 +493,12 @@ void print() {
 int main(int argc, char *argv[]) {
 	/* Function variables */
 	char errmsg[256];		/* The message to print in case of an error */
-	int input_weight = 0;		/* The weight */
+	int input_weight = 0;	/* The weight */
 	int res = 0;			/* Temporary variable to store function response */
 	long temp = 0;			/* Temporary variable */
-	packet* last_packet;		/* Temporary variable for the last readed packet from the input file */
-								/* Check correct call structure */
+	packet* last_packet;	/* Temporary variable for the last readed packet from the input file */
 	packet* comper_packet; /* packet for same_flow perposes */
-
+	/* Check correct call structure */
 	if (argc != 6) {
 		if (argc < 6) {
 			printf(USAGE_OPERANDS_MISSING_MSG, argv[0]);
@@ -513,15 +513,19 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, F_ERROR_TYPE_MSG);
 		return program_end(EXIT_FAILURE);
 	}
+	if (strncpy_s(TYPE, 4, argv[1], strlen(argv[1])) != 0) {
+		fprintf(stderr, F_ERROR_TYPE_MSG);
+		return program_end(EXIT_FAILURE);
+	}
 	/* Check input file => argv[2] */
 	if ((IN_FILE = fopen(argv[2], "rb")) == NULL) { /* Upon successful completion ... return a FILE pointer. Otherwise, NULL is returned and errno is set to indicate the error. */
-		//strerror_r(errno, errmsg, 255);
+		strerror_r(errno, errmsg, 255);
 		fprintf(stderr, F_ERROR_INPUT_FILE_MSG, argv[2], errmsg);
 		return program_end(errno);
 	}
 	/* Check output file => argv[3] */
 	if ((OUT_FILE = fopen(argv[3], "wb")) == NULL) { /* Upon successful completion ... return a FILE pointer. Otherwise, NULL is returned and errno is set to indicate the error. */
-		//strerror_r(errno, errmsg, 255);
+		strerror_r(errno, errmsg, 255);
 		fprintf(stderr, F_ERROR_OUTPUT_FILE_MSG, argv[3], errmsg);
 		return program_end(errno);
 	}
@@ -545,22 +549,21 @@ int main(int argc, char *argv[]) {
 	STRUCTURE.same_flow_send_count = 0;
 	comper_packet = malloc(sizeof(packet)); /* TODO free memory & allocation check */
 	STRUCTURE.flow_pk = comper_packet;
-
 	last_packet = malloc(sizeof(packet)); /* TODO free memory & allocation check */
 	QUANTUM = input_weight; /* TODO XXX DELME XXX TODO */
 	QUANTUM = QUANTUM; /* TODO XXX DELME XXX TODO */
-								   /* Weighted Round Robin
-								   * 1) If total weights is W, it takes W rounds to complete a cycle.
-								   * 2) Each flow i transmits w[i] packets in a cycle.
-								   *
-								   * Deficit Round Robin
-								   * 1) Each flow has a credit counter.
-								   * 2) Credit counter is increased by “quantum” with every cycle.
-								   * 3) A packet is sent only if there is enough credit.
-								   */
-								   /* Start the clock :) */
+	/* Weighted Round Robin
+	 * 1) If total weights is W, it takes W rounds to complete a cycle.
+	 * 2) Each flow i transmits w[i] packets in a cycle.
+	 *
+	 * Deficit Round Robin
+	 * 1) Each flow has a credit counter.
+	 * 2) Credit counter is increased by “quantum” with every cycle.
+	 * 3) A packet is sent only if there is enough credit.
+	 */
+	/* Start the clock :) */
 	int readed = 0;
-	while ( (readed = read_packet(last_packet, input_weight)) || (STRUCTURE.count > 0) ) { /* while there are more packets in file */ /* TODO we will be needed to add check that we also finish to send everything */
+	while ( (readed = read_packet(last_packet, input_weight)) || (STRUCTURE.count > 0) ) { /* while there are more packets to work on */
 		if (readed == 0) {
 			last_packet->Time = LONG_MAX;
 		}
