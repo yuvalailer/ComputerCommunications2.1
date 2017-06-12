@@ -327,6 +327,7 @@ int enqueue(packet* new_pk) {
 		(*new_pk).next = new_pk;
 		printf("[C] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
 		STRUCTURE.count = 1; /* We only have one packet in our data structure */
+		copy_packet(new_pk, STRUCTURE.flow_pk);
 	} else { /* Search if the packet belong to an old flow */
 		search_head = STRUCTURE.head;
 		do {
@@ -400,19 +401,26 @@ int dequeue(packet* pk) {
  */
 packet* find_packet() {
 	packet* search_head = STRUCTURE.head;
-	packet* return_packet = malloc(sizeof(packet)); //TODO to be freed in send. 
-	if (STRUCTURE.same_flow_send_count != -1) { /* there are more packets to be sent from the flow */
-		if( same_flow(search_head,STRUCTURE.flow_pk) ){
-			
-		}
-		do {
-				
-		} while(search_head != STRUCTURE.head);
-		/* finished loop and no such flow */
-
-	}
-
-
+		do {	
+			if ( same_flow(search_head, STRUCTURE.flow_pk) ) { /* head points to a packet from the correct flow */
+				if( search_head->down == NULL ){ /* no more pakets on flow */
+					if(search_head->next != search_head){ /* not last one on the stractue */
+						copy_packet(search_head->next, STRUCTURE.flow_pk);
+					}
+				}
+				if( search_head->weight >= STRUCTURE.same_flow_send_count) { /* sent less then requested by flow. */
+					STRUCTURE.same_flow_send_count++;
+					return  search_head;
+				} else { /* already sent more then enagth */ 
+					if (search_head->next != search_head) { /* not last one on the stractue */
+						copy_packet(search_head->next, STRUCTURE.flow_pk);
+					}
+					STRUCTURE.same_flow_send_count = 0;
+				}
+			}
+			search_head = search_head->next;
+		} while (1);
+		//} while(search_head != STRUCTURE.head);
 }
 /* int send_packet() { }
  *
