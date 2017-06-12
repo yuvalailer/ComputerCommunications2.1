@@ -55,6 +55,7 @@ int validate_IPv4(const char *s);						/* Verify that the string is valid IPv4 *
 int convert_strin2long(char *input, long *output, long from, long to, char *error_string);	/* Convert the string to int */
 int read_packet(packet* pk, int default_weight);		/* Read one line from the input file and parse her */
 void copy_packet(packet* src, packet* dst);				/* Copy the content of the source packet to the destination packet */
+void write_packet(packet* pk);							/* Write the packet ID to the output file */
 int same_flow(packet* pacA, packet* pacB);				/* Check if two packets belong to the same flow */
 int enqueue(packet* new_pk);							/* Add packet to our data structure */
 int dequeue(packet* pk);								/* Remove packet from our data structure */
@@ -295,6 +296,14 @@ void copy_packet(packet* src, packet* dst) {
 	dst->down = src->down;
 	printf("~~~END copy_packet~~~\n"); /* XXX */
 	return;
+}
+/* void write_packet(packet* pk) { }
+ *
+ * Receive pointer to a packet
+ * Write the packet ID to the output file
+ */
+void write_packet(packet* pk) {
+	fprintf(OUT_FILE, "%ld: %ld\n", CLOCK, pk->pktID);
 }
 /* int same_flow(packet* pacA, packet* pacB) { }
  *
