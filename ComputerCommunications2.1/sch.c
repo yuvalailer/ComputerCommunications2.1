@@ -434,7 +434,7 @@ int send_packet() { /* TODO TODO TODO  Write to output file */
 	int return_time = (int)((pk->length) / QUANTUM);
 	printf("%d",return_time); /* TODO XXX DELME XXX TODO */
 	/* send packet */
-	/* TODO write to file */
+	write_packet(pk);
 	/* move weight up */
 	if(pk->up != NULL){
 		(*pk->up).weight = pk->weight;
@@ -456,7 +456,6 @@ void print() {
 	printf("| Current time=%-20ld Number of waiting packets=%-10i |\n", CLOCK, STRUCTURE.count);
 	printf("|=========================|===========================|==================|\n");
 	do {
-		printf("[B] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
 		printf("| ID=%-20ld | Time=%-20ld | Sent=%5i/%-5i |\n", pkt->pktID, pkt->Time, pkt->start_byte, pkt->length);
 		pkt = pkt->next; /* Move to the next element */
 	} while (pkt != STRUCTURE.head); /* Until we complets a single round over the list */
@@ -569,6 +568,7 @@ int main(int argc, char *argv[]) {
 			fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
 			return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
 		}
+		print(); /* TODO DEBUG DELME XXX TODO */
 	}
 	/* Exit */
 	return program_end(EXIT_SUCCESS);
