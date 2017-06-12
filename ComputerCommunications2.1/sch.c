@@ -2,7 +2,7 @@
 #include <limits.h>	/* LONG_MAX, LONG_MIN */
 #include <stdio.h>	/* FILE, printf, fprintf, sprintf, stderr, fopen, fclose */
 #include <stdlib.h>	/* EXIT_FAILURE, EXIT_SUCCESS, NULL, strtol */
-#include <string.h>	/* strncmp, //strerror_r */
+#include <string.h>	/* strncmp, //strerror_s */
 
 #define USAGE_OPERANDS_MISSING_MSG		"Missing operands\nUsage: %s <TYPE [RR/DRR]> <INPUT FILE> <OUTPUT FILE> <WEIGHT> <QUANTUM>\n"
 #define USAGE_OPERANDS_SURPLUS_MSG		"Too many operands\nUsage: %s <TYPE [RR/DRR]> <INPUT FILE> <OUTPUT FILE> <WEIGHT> <QUANTUM>\n"
@@ -75,12 +75,12 @@ int program_end(int error) {
 	char errmsg[256];
 	int res = 0;
 	if ((IN_FILE != NULL) && (fclose(IN_FILE) == EOF)) { /* Upon successful completion 0 is returned. Otherwise, EOF is returned and errno is set to indicate the error. */
-		//strerror_r(errno, errmsg, 255);
+		strerror_s(errmsg, 255, errno);
 		fprintf(stderr, F_ERROR_INPUT_CLOSE_MSG, errmsg);
 		res = errno;
 	}
 	if ((OUT_FILE != NULL) && (fclose(OUT_FILE) == EOF)) { /* Upon successful completion 0 is returned. Otherwise, EOF is returned and errno is set to indicate the error. */
-		//strerror_r(errno, errmsg, 255);
+		strerror_s(errmsg, 255, errno);
 		fprintf(stderr, F_ERROR_OUTPUT_CLOSE_MSG, errmsg);
 		res = errno;
 	}
@@ -130,26 +130,23 @@ int validate_IPv4(const char *s) { /* http://stackoverflow.com/questions/791982/
  * Return errno if error occurred.
  */
 int convert_strin2long(char *input, long *output, long from, long to, char *error_string) { /* https://linux.die.net/man/3/strtol */
-																							/* Function variables */
-	char errmsg[256];	/* The message to print in case of an error */
+	/* Function variables */
+	char errmsg[256];		/* The message to print in case of an error */
 	char output_char[10];	/* variable for sprintf() */
-	char *endptr;		/* variable for strtol() */
-						/* Function body */
+	char *endptr;			/* variable for strtol() */
+	/* Function body */
 	*output = strtol(input, &endptr, 10); /* If an underflow occurs. strtol() returns LONG_MIN. If an overflow occurs, strtol() returns LONG_MAX. In both cases, errno is set to ERANGE. */
 	if ((errno == ERANGE && (*output == LONG_MAX || *output == LONG_MIN)) || (errno != 0 && *output == 0)) {
-		//strerror_r(errno, errmsg, 255);
+		strerror_s(errmsg, 255, errno);
 		fprintf(stderr, F_ERROR_FUNCTION_STRTOL_MSG, errmsg);
 		return errno;
-	}
-	else if ((endptr == input) || (*output < from) || (*output > to)) { /* (Empty string) or (Not in range) */
+	} else if ((endptr == input) || (*output < from) || (*output > to)) { /* (Empty string) or (Not in range) */
 		fprintf(stderr, error_string, input);
 		return EXIT_FAILURE;
-	}
-	else if (sprintf(output_char, "%ld", *output) < 0) { /* sprintf(), If an output error is encountered, a negative value is returned. */
+	} else if (sprintf(output_char, "%ld", *output) < 0) { /* sprintf(), If an output error is encountered, a negative value is returned. */
 		fprintf(stderr, F_ERROR_FUNCTION_SPRINTF_MSG);
 		return EXIT_FAILURE;
-	}
-	else if (strncmp(output_char, input, 10) != 0) { /* Contain invalid chars */
+	} else if (strncmp(output_char, input, 10) != 0) { /* Contain invalid chars */
 		fprintf(stderr, error_string, input);
 		return EXIT_FAILURE;
 	}
@@ -165,12 +162,12 @@ int convert_strin2long(char *input, long *output, long from, long to, char *erro
 int read_packet(packet* pk, int default_weight) {
 	/* Function variables */
 	char line[105];	/* 105 == pktID[20]+Time[20]+Sadd[15]+Sport[5]+Dadd[15]+Dport[5]+length[5]+weight[11]+spaces[7]+"\r\n"[2] */
-	char *word;	/* Each string splited by whitespace */
+	char *word;		/* Each string splited by whitespace */
 	char *newline;
-	int count;	/* Count how many words was in the current line */
+	int count;		/* Count how many words was in the current line */
 	int res = 0;	/* Temporary variable to store function response */
 	long temp = 0;	/* Temporary variable */
-					/* Function body */
+	/* Function body */
 	if ((fgets(line, sizeof(line), IN_FILE)) && (strlen(line) > 26)) { /* return s on success, and NULL on error or when end of file occurs while no characters have been read. */
 		count = 0; /* Init the counter */
 		word = strtok(line, " ");
@@ -188,73 +185,56 @@ int read_packet(packet* pk, int default_weight) {
 			if ((count == 0) && (strlen(word) <= 20)) {
 				if ((res = convert_strin2long(word, &temp, LONG_MIN, LONG_MAX, F_ERROR_PKTID_INVALID_MSG)) > 0) {
 					return 0; /* Error occurred, Exit */
-				}
-				else {
+				} else {
 					pk->pktID = temp;
 				}
-			}
-			else if ((count == 1) && (strlen(word) <= 20)) {
+			} else if ((count == 1) && (strlen(word) <= 20)) {
 				if ((res = convert_strin2long(word, &temp, LONG_MIN, LONG_MAX, F_ERROR_TIME_INVALID_MSG)) > 0) {
 					return 0; /* Error occurred, Exit */
-				}
-				else {
+				} else {
 					pk->Time = temp;
 				}
-			}
-			else if ((count == 2) && (strlen(word) <= 15)) {
+			} else if ((count == 2) && (strlen(word) <= 15)) {
 				if (validate_IPv4(word) == -1) {
 					fprintf(stderr, F_ERROR_IP_INVALID_MSG, word);
 					return 0;
-				}
-				else {
+				} else {
 					strncpy(pk->Sadd, word, 15);
 				}
-			}
-			else if ((count == 3) && (strlen(word) <= 5)) {
+			} else if ((count == 3) && (strlen(word) <= 5)) {
 				if ((res = convert_strin2long(word, &temp, 0, 65535, F_ERROR_PORT_INVALID_MSG)) > 0) {
 					return 0; /* Error occurred, Exit */
-				}
-				else {
+				} else {
 					pk->Sport = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
 				}
-			}
-			else if ((count == 4) && (strlen(word) <= 15)) {
+			} else if ((count == 4) && (strlen(word) <= 15)) {
 				if (validate_IPv4(word) == -1) {
 					fprintf(stderr, F_ERROR_IP_INVALID_MSG, word);
 					return 0;
-				}
-				else {
+				} else {
 					strncpy(pk->Dadd, word, 15);
 				}
-			}
-			else if ((count == 5) && (strlen(word) <= 5)) {
+			} else if ((count == 5) && (strlen(word) <= 5)) {
 				if ((res = convert_strin2long(word, &temp, 0, 65535, F_ERROR_PORT_INVALID_MSG)) > 0) {
 					return 0; /* Error occurred, Exit */
-				}
-				else {
+				} else {
 					pk->Dport = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
 				}
-			}
-			else if ((count == 6) && (strlen(word) <= 5)) {
+			} else if ((count == 6) && (strlen(word) <= 5)) {
 				if ((res = convert_strin2long(word, &temp, 1, 16384, F_ERROR_LENGTH_INVALID_MSG)) > 0) { /* TODO TODO TODO Change from 1 to 64 TODO TODO TODO !!!!!!!!!!!!! */
 					return 0; /* Error occurred, Exit */
-				}
-				else {
+				} else {
 					pk->length = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
 				}
-			}
-			else if ((count == 7) && (strlen(word) <= 11)) {
+			} else if ((count == 7) && (strlen(word) <= 11)) {
 				if ((res = convert_strin2long(word, &temp, 1, INT_MAX, F_ERROR_WEIGHT_INVALID_MSG)) > 0) {
 					return 0; /* Error occurred, Exit */
-				}
-				else if (temp) { /* There was a value for weight in the input file */
+				} else if (temp) { /* There was a value for weight in the input file */
 					pk->weight = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
-				}
-				else {
+				} else {
 					pk->weight = default_weight; /* Use the default weight */
 				}
-			}
-			else {
+			} else {
 				return 0; /* Invalid input, Length is too long */
 			}
 			count += 1; /* Inc the counter */
@@ -270,8 +250,7 @@ int read_packet(packet* pk, int default_weight) {
 		pk->up = NULL; /* Pointer to upper packet in the queue */
 		pk->down = NULL; /* Pointer to lower packet in the queue */
 		return 1;
-	}
-	else {
+	} else {
 		return 0; /* EOF */
 	}
 }
@@ -465,22 +444,22 @@ void print() {
 	packet* pkt = STRUCTURE.head;
 	printf("~~~START print~~~\n"); /* XXX */
 	printf("[A] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
-	printf("╔════════════════════════════════════════════════════════════════════════╗\n");
-	printf("║ Current time=%-20ld Number of waiting packets=%-10i ║\n", CLOCK, STRUCTURE.count);
-	printf("╠═════════════════════════╤═══════════════════════════╤══════════════════╣\n");
+	printf("|========================================================================|\n");
+	printf("| Current time=%-20ld Number of waiting packets=%-10i |\n", CLOCK, STRUCTURE.count);
+	printf("|=========================|===========================|==================|\n");
 	do {
 		printf("[B] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
-		printf("║ ID=%-20ld │ Time=%-20ld │ Sent=%5i/%-5i ║\n", pkt->pktID, pkt->Time, pkt->start_byte, pkt->length);
+		printf("| ID=%-20ld | Time=%-20ld | Sent=%5i/%-5i |\n", pkt->pktID, pkt->Time, pkt->start_byte, pkt->length);
 		pkt = pkt->next; /* Move to the next element */
 	} while (pkt != STRUCTURE.head); /* Until we complets a single round over the list */
-	printf("╚═════════════════════════╧═══════════════════════════╧══════════════════╝\n");
-	/*╔══════════════════════════════════╤═══════════════════════╤════════════════╗*/
+	printf("|=========================|===========================|==================|\n");
+	/*╔==================================╤=======================╤================╗*/
 	/*║               Col1               │         Col2          │      Col3      ║*/
-	/*╠══════════════════════════════════╪═══════════════════════╪════════════════╣*/
+	/*╠==================================╪=======================╪================╣*/
 	/*║                                  │                       │                ║*/
 	/*║                                  │                       │                ║*/
 	/*║                                  │                       │                ║*/
-	/*╚══════════════════════════════════╧═══════════════════════╧════════════════╝*/
+	/*╚==================================╧=======================╧================╝*/
 	if (STRUCTURE.head) { printf("[H] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
 	printf("~~~END print~~~\n"); /* XXX */
 }
@@ -519,13 +498,13 @@ int main(int argc, char *argv[]) {
 	}
 	/* Check input file => argv[2] */
 	if ((IN_FILE = fopen(argv[2], "rb")) == NULL) { /* Upon successful completion ... return a FILE pointer. Otherwise, NULL is returned and errno is set to indicate the error. */
-		strerror_r(errno, errmsg, 255);
+		strerror_s(errmsg, 255, errno);
 		fprintf(stderr, F_ERROR_INPUT_FILE_MSG, argv[2], errmsg);
 		return program_end(errno);
 	}
 	/* Check output file => argv[3] */
 	if ((OUT_FILE = fopen(argv[3], "wb")) == NULL) { /* Upon successful completion ... return a FILE pointer. Otherwise, NULL is returned and errno is set to indicate the error. */
-		strerror_r(errno, errmsg, 255);
+		strerror_s(errmsg, 255, errno);
 		fprintf(stderr, F_ERROR_OUTPUT_FILE_MSG, argv[3], errmsg);
 		return program_end(errno);
 	}
