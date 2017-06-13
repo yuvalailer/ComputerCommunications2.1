@@ -323,6 +323,7 @@ int same_flow(packet* pacA, packet* pacB) {
  * Return 0 on success and 1 in case of an error
  */
 int enqueue(packet* new_pk) {
+	printf(" >>>>>>>>>>>>>>started enqueue on pk - %d ",new_pk->pktID);
 	/* Function variables */
 	packet* search_head = NULL; /* Pointer to the current element in our round double linked list */
 	/* Init the new packet */
@@ -375,6 +376,7 @@ int enqueue(packet* new_pk) {
 		/* Finish */
 		STRUCTURE.count++; /* We added one packet to the data structure */
 	}
+	printf(" <<<<<<<<<<<<<<<< ended enqueue on pk - %d ", new_pk->pktID);
 	printf("~~~END enqueue~~~\n"); /* XXX */
 	return 0;
 }
@@ -442,15 +444,18 @@ packet* find_packet() {
 				return  search_head;
 			} else { /* Already sent more then enagth */
 				/*if (STRUCTURE.flow_pk->next != STRUCTURE.flow_pk) { /* Not last one on the stractue */
+				printf("[1] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID);
 				STRUCTURE.flow_pk = STRUCTURE.flow_pk->next;
-				/*}*/
+				printf("[2] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID);
 				STRUCTURE.same_flow_send_count = 0;
+				while (search_head->up != NULL) {
+					search_head = search_head->up;
+				}
 			}
 			printf("[3/3] search_head->pktID %d\n", search_head->pktID); /* TODO XXX DELME */
 		}
 		search_head = search_head->next;
 	} while (1);
-	//} while(search_head != STRUCTURE.head);
 }
 /* int send_packet() { }
  *
@@ -459,6 +464,7 @@ packet* find_packet() {
  * Return ??? XXX ??? XXX
  */
 int send_packet() { /* TODO TODO TODO  Write to output file */
+	printf(" __________________________started send packet \n\n");
 	/* find the pacekt to be sent*/
 	packet* pk = find_packet();
 	int return_time = (int)((pk->length) / QUANTUM);
@@ -471,6 +477,7 @@ int send_packet() { /* TODO TODO TODO  Write to output file */
 	}
 	/* delete packet */
 	dequeue(pk);
+	printf(" ------------------------- finished send packet \n\n");
 	return return_time;
 }
 /* void print() { }
