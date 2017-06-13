@@ -387,22 +387,23 @@ int enqueue(packet* new_pk) {
  * Return 0 on success & 1 on failure
  */
 int dequeue(packet* pk) {
-	if ((pk->next == NULL) || (pk->prev == NULL) || (pk->up != NULL)) { /* Invalid dequeue request */
-		return 1;
-	}
+	//if ((pk->next == NULL) || (pk->prev == NULL) || (pk->up != NULL)) { /* Invalid dequeue request */
+	//	printf("this is it. \n\n\n\n\n\n"); /*  TODO DELME */
+	//	return 1;
+	//}
 	if (STRUCTURE.count <= 1) { /* The last packet in our data structure */
 		STRUCTURE.head = NULL;
 		STRUCTURE.count = 0;
 	} else { /* Disconnect that node from the chain */
-		if (pk->down != NULL) { /* There are more packets in that flow */
+		if (pk->up != NULL) { /* There are more packets in that flow */
 			if (STRUCTURE.head == pk) {
-				STRUCTURE.head = pk->down;
+				STRUCTURE.head = pk->up;
 			}
-			pk->prev->next = pk->down; /* Move the next packet to be the upper one */
-			pk->next->prev = pk->down;
-			pk->down->next = pk->next;
-			pk->down->prev = pk->prev;
-			pk->down->up = NULL;
+			//pk->prev->next = pk->up; /* Move the next packet to be the upper one */
+			//pk->next->prev = pk->up;
+			//pk->down->next = pk->next;
+			//pk->down->prev = pk->prev;
+			pk->up->down = NULL;
 		} else {/* There are no more packets in that flow */
 			if (STRUCTURE.head == pk) {
 				STRUCTURE.head = pk->next;
