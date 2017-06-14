@@ -54,7 +54,7 @@ int program_end(int error);								/* Close gracefully everything */
 int validate_IPv4(const char *s);						/* Verify that the string is valid IPv4 */
 int convert_strin2long(char *input, long *output, long from, long to, char *error_string);	/* Convert the string to int */
 int read_packet(packet* pk, int default_weight);		/* Read one line from the input file and parse her */
-void copy_packet(packet* src, packet* dst);				/* Copy the content of the source packet to the destination packet */
+int copy_packet(packet* src, packet* dst);				/* Copy the content of the source packet to the destination packet */
 void write_packet(packet* pk);							/* Write the packet ID to the output file */
 int same_flow(packet* pacA, packet* pacB);				/* Check if two packets belong to the same flow */
 int enqueue(packet* new_pk);							/* Add packet to our data structure */
@@ -251,13 +251,17 @@ int read_packet(packet* pk, int default_weight) {
 		return 0; /* EOF */
 	}
 }
-/* void copy_packet(packet* src, packet* dst) { }
+/* int copy_packet(packet* src, packet* dst) { }
  *
  * Receive pointers of two packets
  * Copy the content of the source packet to the destination packet
+ * Return 1 on success and 0 on failure.
  */
-void copy_packet(packet* src, packet* dst) {
+int copy_packet(packet* src, packet* dst) {
 	printf("~~~START copy_packet~~~\n"); /* XXX */
+	if ((src->weight == 0) || (dst->weight == 0)) {
+		return 0;
+	}
 	dst->pktID = src->pktID;
 	dst->Time = src->Time;
 	strncpy(dst->Sadd, src->Sadd, 15);
@@ -271,7 +275,7 @@ void copy_packet(packet* src, packet* dst) {
 	dst->up = src->up;
 	dst->down = src->down;
 	printf("~~~END copy_packet~~~\n"); /* XXX */
-	return;
+	return 1;
 }
 /* void write_packet(packet* pk) { }
  *
@@ -290,9 +294,6 @@ void write_packet(packet* pk) {
  * Return 0 o.w
  */
 int same_flow(packet* pacA, packet* pacB) {
-	if ((STRUCTURE.count == 4) && (STRUCTURE.head->pktID == 8)) { /* TODO XXX DELME XXX */
-		printf("TODO DEBUG DELME XXX\n");/* TODO XXX DELME XXX */
-	} /* TODO XXX DELME XXX */
 	printf("~~~START same_flow~~~\n"); /* XXX */
 	printf("HHH\n"); /* XXX */
 	printf("[E] Pointers: [pacA]%p [pacB]%p\n", (void *)pacA, (void *)pacB); /* XXX */
@@ -344,10 +345,9 @@ int enqueue(packet* new_pk) {
 				printf("JJJ\n"); /* XXX */
 				/* Connect the new packet to the packets before and after */
 				if (search_head->next != search_head) {
-				new_pk->next = search_head->next;
-				new_pk->prev = search_head->prev;
-				}
-				else {
+					new_pk->next = search_head->next;
+					new_pk->prev = search_head->prev;
+				} else {
 					new_pk->next = new_pk;
 					new_pk->prev = new_pk;
 				}
@@ -429,9 +429,6 @@ int dequeue(packet* pk) {
  * Return ??? XXX ??? XXX
  */
 packet* find_packet() {
-	if ((STRUCTURE.count == 4) && (STRUCTURE.head->pktID == 8)) { /* TODO XXX DELME XXX */
-		printf("TODO DEBUG DELME XXX\n");/* TODO XXX DELME XXX */
-	} /* TODO XXX DELME XXX */
 	packet* search_head = STRUCTURE.head;
 	do {
 		if (same_flow(search_head, STRUCTURE.flow_pk)) { /* Head points to a packet from the correct flow */
@@ -483,6 +480,9 @@ int send_packet() { /* TODO TODO TODO  Write to output file */
 		(*pk->up).weight = pk->weight;
 	}
 	/* delete packet */
+	if (pk->pktID == 24) { /* TODO XXX DELME XXX */
+		printf("TODO DEBUG DELME XXX\n");/* TODO XXX DELME XXX */
+	} /* TODO XXX DELME XXX */
 	dequeue(pk);
 	printf(" ------------------------- finished send packet \n\n");
 	return return_time;
@@ -609,18 +609,20 @@ int main(int argc, char *argv[]) {
 			while (last_packet->Time > CLOCK) {
 				if (STRUCTURE.count > 0){
 					CLOCK += send_packet();
+					print(); /* TODO DEBUG DELME XXX TODO */
 				} else {
 					CLOCK = last_packet->Time;
 				}
 			}
 		}
 		packet* new_pk = (packet *)malloc(sizeof(packet));
-		copy_packet(last_packet, new_pk);
-		if (enqueue(new_pk)) { /* Add the new packet to the data structure and keep reading for more packets with the same time */
-			fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
-			return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
+		if (copy_packet(last_packet, new_pk)) {
+			if (enqueue(new_pk)) { /* Add the new packet to the data structure and keep reading for more packets with the same time */
+				fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
+				return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
+			}
 		}
-		print(); /* TODO DEBUG DELME XXX TODO */
+		last_packet->weight = 0;
 	}
 	/* Exit */
 	return program_end(EXIT_SUCCESS);
