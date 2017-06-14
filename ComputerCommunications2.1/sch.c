@@ -68,12 +68,12 @@ int send_packet();										/* Send the next packet that need to be sent */
 void print();											/* Print the packets in line */
 int main(int argc, char *argv[]);						/* Simulate round robin algorithm */
 
-														/* int program_end(int error) { }
-														*
-														* Receive exit code,
-														* Close gracefully everything,
-														* Return exit code,
-														*/
+/* int program_end(int error) { }
+ *
+ * Receive exit code,
+ * Close gracefully everything,
+ * Return exit code,
+ */
 int program_end(int error) {
 	char errmsg[256];
 	int res = 0;
@@ -392,6 +392,7 @@ int enqueue(packet* new_pk) {
 					STRUCTURE.head = new_pk;
 				}
 				if (STRUCTURE.flow_pk->pktID == search_head->pktID) {
+					printf("[1] Change flow_pk from ID %ld to ID %ld\n", STRUCTURE.flow_pk->pktID, new_pk->pktID); /* DEBUG XXX DELME */
 					STRUCTURE.flow_pk = new_pk;
 				}
 				/* Finish */
@@ -448,7 +449,6 @@ int dequeue(packet* pk) {
 * Find the next packet that need to be sent
 * Return pointer to that packet
 */
-
 int getWight(packet* input_packet) {
 	packet* search_head = STRUCTURE.weight_keeper;  /* point to top of the line */
 	while ( search_head->down != NULL ) {					/* while didn't hit the botton */
@@ -471,7 +471,6 @@ int getWight(packet* input_packet) {
 	new_comper_packet->down = NULL;
 	return input_packet->weight;
 }
-
 packet* find_packet() {
 	packet* search_head = STRUCTURE.head;
 	do {
@@ -479,6 +478,7 @@ packet* find_packet() {
 			if (DEBUG) { printf("[1/3] search_head->pktID %d\n", search_head->pktID); } /* TODO XXX DELME */
 			if (search_head->down == NULL) { /* No more packets on flow */
 				if (search_head->next != search_head) { /* Not last one on the stractue */
+					printf("[2] Change flow_pk from ID %ld to ID %ld\n", STRUCTURE.flow_pk->pktID, search_head->next->pktID); /* DEBUG XXX DELME */
 					STRUCTURE.flow_pk = search_head->next;
 				}
 			} else {
