@@ -24,9 +24,9 @@
 #define F_ERROR_WEIGHT_INVALID_MSG		"[Error] The weight '%s' is not a positive integer\n"
 
 int DEBUG_1 = 0; /* Alot of printing */ /* TODO XXX DELME XXX TODO */
-int DEBUG_2 = 1; /* Not alot of printing */ /* TODO XXX DELME XXX TODO */
+int DEBUG_2 = 0; /* Not alot of printing */ /* TODO XXX DELME XXX TODO */
 int DEBUG_3 = 1; /* Print the data structure */ /* TODO XXX DELME XXX TODO */
-int DEBUG_4 = 0; /* Show what is written to the file */ /* TODO XXX DELME XXX TODO */
+int DEBUG_4 = 1; /* Show what is written to the file */ /* TODO XXX DELME XXX TODO */
 
 typedef struct DataStructure {
 	struct Packets* head;		/* Pointer to the head of the round double linked list */
@@ -73,12 +73,12 @@ int send_packet();										/* Send the next packet that need to be sent */
 void print();											/* Print the packets in line */
 int main(int argc, char *argv[]);						/* Simulate round robin algorithm */
 
-														/* int program_end(int error) { }
-														*
-														* Receive exit code,
-														* Close gracefully everything,
-														* Return exit code,
-														*/
+/* int program_end(int error) { }
+ *
+ * Receive exit code,
+ * Close gracefully everything,
+ * Return exit code,
+ */
 int program_end(int error) {
 	char errmsg[256];
 	int res = 0;
@@ -413,17 +413,14 @@ int enqueue(packet* new_pk) {
 		getWight(new_pk);
 		packet* head_flows = STRUCTURE.weight_keeper; /* Point to top of the line */
 		packet* head_packets = STRUCTURE.head; /* Point to first packet in our data structure */
-		if (new_pk->pktID == 3) { /* TODO DEBUG DELME XXX */
-			printf("NOOOOOOOOOOOOOOO\n"); /* TODO DEBUG DELME XXX */
-		} /* TODO DEBUG DELME XXX */
 		while (head_flows->down != NULL) { /* Foreach flow in our program history */
 			if (same_flow(head_flows, new_pk)) {
-				printf("new_pk %ld\n", new_pk->pktID); /* XXX */
-				printf("head_flows %ld\n", head_flows->pktID); /* XXX */
+				if (DEBUG_2) { printf("new_pk %ld\n", new_pk->pktID); } /* XXX */
+				if (DEBUG_2) { printf("head_flows %ld\n", head_flows->pktID); } /* XXX */
 				if (head_packets == NULL) { /* Add to the end of the data structure */
 					break;
 				} /* Add the packet before head_packets */
-				printf("head_packets %ld\n", head_packets->pktID); /* XXX */
+				if (DEBUG_2) { printf("head_packets %ld\n", head_packets->pktID); } /* XXX */
 				new_pk->next = head_packets;
 				new_pk->prev = head_packets->prev;
 				head_packets->prev->next = new_pk;
@@ -517,7 +514,24 @@ int getWight(packet* input_packet) {
  * Return pointer to that packet
  */
 packet* find_packet() {
+	int flag = 0;
 	packet* search_head = STRUCTURE.head;
+	////
+	packet* search = STRUCTURE.weight_keeper;
+	while (!same_flow(search_head, STRUCTURE.flow_pk)){
+		search_head = search_head->next;
+		if (search_head == STRUCTURE.head) {
+			STRUCTURE.same_flow_send_count = 0;
+			while (1){
+				if (same_flow(search, STRUCTURE.flow_pk)){
+					break;
+				} else {
+					search = search->down;
+				}
+			} // have the right flow_pk in search
+		}
+	}
+	////
 	do {
 		if (same_flow(search_head, STRUCTURE.flow_pk)) { /* Head points to a packet from the correct flow */
 			if (DEBUG_1) { printf("[1/3] search_head->pktID %d\n", search_head->pktID); } /* TODO XXX DELME */
@@ -525,6 +539,7 @@ packet* find_packet() {
 				if (search_head->next != search_head) { /* Not last one on the stractue */
 					if (DEBUG_2) { printf("[2] Change flow_pk from ID %ld to ID %ld\n", STRUCTURE.flow_pk->pktID, search_head->next->pktID); } /* DEBUG XXX DELME */
 					STRUCTURE.flow_pk = search_head->next;
+					flag = 1;
 				}
 			} else {
 				while (search_head->down != NULL) {
@@ -570,7 +585,9 @@ packet* find_packet() {
 				}
 			} else { /* Already sent more then enagth */
 				if (DEBUG_1) { printf("[1] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID); }
-				STRUCTURE.flow_pk = STRUCTURE.flow_pk->next;
+				if (flag == 0) {
+					STRUCTURE.flow_pk = STRUCTURE.flow_pk->next;
+				}
 				if (DEBUG_1) { printf("[2] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID); }
 				STRUCTURE.same_flow_send_count = 0;
 				while (search_head->up != NULL) {
@@ -593,7 +610,7 @@ int send_packet() {
 	packet* pk = find_packet();
 	int return_time = (int)(pk->length);
 	if (DEBUG_1) { printf("%d", return_time); } /* TODO XXX DELME XXX TODO */
-												/* send packet */
+	/* send packet */
 	write_packet(pk);
 	/* move weight up */
 	if (pk->up != NULL) {
