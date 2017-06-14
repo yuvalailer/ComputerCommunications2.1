@@ -328,12 +328,12 @@ int enqueue(packet* new_pk) {
 	/* Function variables */
 	packet* search_head = NULL; /* Pointer to the current element in our round double linked list */
 	/* Init the new packet */
-	if (STRUCTURE.head) { printf("[F] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
+	if (DEBUG) {if (STRUCTURE.head) {printf("[F] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next));}} /* XXX */
 	if (STRUCTURE.head == NULL) { /* This is the first packet in our data structure */
 		STRUCTURE.head = new_pk; /* The new packet is our new head */
 		(*new_pk).prev = new_pk; /* And he his the prev and next of himself */
 		(*new_pk).next = new_pk;
-		printf("[C] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
+		if (DEBUG) {printf("[C] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next));} /* XXX */
 		STRUCTURE.count = 1; /* We only have one packet in our data structure */
 		copy_packet(new_pk, STRUCTURE.flow_pk);
 	} else { /* Search if the packet belong to an old flow */
@@ -600,7 +600,7 @@ int main(int argc, char *argv[]) {
 			while (last_packet->Time > CLOCK) {
 				if (STRUCTURE.count > 0){
 					CLOCK += send_packet();
-					print(); /* TODO DEBUG DELME XXX TODO */
+					if (DEBUG) {print();} /* TODO DEBUG DELME XXX TODO */
 				} else {
 					CLOCK = last_packet->Time;
 				}
