@@ -26,7 +26,7 @@
 int DEBUG_1 = 0; /* Alot of printing */ /* TODO XXX DELME XXX TODO */
 int DEBUG_2 = 0; /* Not alot of printing */ /* TODO XXX DELME XXX TODO */
 int DEBUG_3 = 0; /* Print the data structure */ /* TODO XXX DELME XXX TODO */
-int DEBUG_4 = 0; /* Show what is written to the file */ /* TODO XXX DELME XXX TODO */
+int DEBUG_4 = 1; /* Show what is written to the file */ /* TODO XXX DELME XXX TODO */
 
 typedef struct DataStructure {
 	struct Packets* head;		/* Pointer to the head of the round double linked list */
@@ -435,9 +435,9 @@ int dequeue(packet* pk) {
 * Return pointer to that packet
 */
 int getWight(packet* input_packet) {
-	packet* search_head = STRUCTURE.weight_keeper;  /* point to top of the line */
-	while ( search_head->down != NULL ) {					/* while didn't hit the botton */
-		if ( same_flow(search_head,input_packet) ) {/* found a packet with the same flow */
+	packet* search_head = STRUCTURE.weight_keeper; /* point to top of the line */
+	while ( search_head->down != NULL ) { /* while didn't hit the botton */
+		if ( same_flow(search_head,input_packet) ) { /* found a packet with the same flow */
 			return search_head->weight;
 		}
 		else { 
@@ -456,6 +456,7 @@ int getWight(packet* input_packet) {
 	new_comper_packet->down = NULL;
 	return input_packet->weight;
 }
+
 packet* find_packet() {
 	packet* search_head = STRUCTURE.head;
 	do {
@@ -486,6 +487,9 @@ packet* find_packet() {
 					printf(" STRUCTURE.same_flow_send_count = %d \n", STRUCTURE.same_flow_send_count); /* TODO XXX DELME */
 					printf(" -------------------------------------------------------------------\n"); /* TODO XXX DELME */
 				} /* TODO XXX DELME */
+				if (!same_flow(search_head, STRUCTURE.flow_pk)) {
+					STRUCTURE.same_flow_send_count = 0;
+				}
 				return  search_head;
 			} else { /* Already sent more then enagth */
 				if (DEBUG_1) { printf("[1] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID); }
@@ -572,7 +576,7 @@ int main(int argc, char *argv[]) {
 	long temp = 0;			/* Temporary variable */
 	packet* last_packet;	/* Temporary variable for the last readed packet from the input file */
 	packet* comper_packet; /* packet for same_flow perposes */
-						   /* Check correct call structure */
+	/* Check correct call structure */
 	if (argc != 6) {
 		if (argc < 6) {
 			printf(USAGE_OPERANDS_MISSING_MSG, argv[0]);
