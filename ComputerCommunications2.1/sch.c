@@ -23,7 +23,10 @@
 #define F_ERROR_TYPE_MSG				"[Error] The only valid types are RR and DRR\n"
 #define F_ERROR_WEIGHT_INVALID_MSG		"[Error] The weight '%s' is not a positive integer\n"
 
-int DEBUG = 0; /* TODO XXX DELME XXX TODO */
+int DEBUG_1 = 0; /* Alot of printing */ /* TODO XXX DELME XXX TODO */
+int DEBUG_2 = 0; /* Not alot of printing */ /* TODO XXX DELME XXX TODO */
+int DEBUG_3 = 0; /* Print the data structure */ /* TODO XXX DELME XXX TODO */
+int DEBUG_4 = 0; /* Show what is written to the file */ /* TODO XXX DELME XXX TODO */
 
 typedef struct DataStructure {
 	struct Packets* head;		/* Pointer to the head of the round double linked list */
@@ -137,22 +140,19 @@ int convert_strin2long(char *input, long *output, long from, long to, char *erro
 	char errmsg[256];		/* The message to print in case of an error */
 	char output_char[10];	/* variable for sprintf() */
 	char *endptr;			/* variable for strtol() */
-							/* Function body */
+	/* Function body */
 	*output = strtol(input, &endptr, 10); /* If an underflow occurs. strtol() returns LONG_MIN. If an overflow occurs, strtol() returns LONG_MAX. In both cases, errno is set to ERANGE. */
 	if ((errno == ERANGE && (*output == LONG_MAX || *output == LONG_MIN)) || (errno != 0 && *output == 0)) {
 		strerror_s(errmsg, 255, errno);
 		fprintf(stderr, F_ERROR_FUNCTION_STRTOL_MSG, errmsg);
 		return errno;
-	}
-	else if ((endptr == input) || (*output < from) || (*output > to)) { /* (Empty string) or (Not in range) */
+	} else if ((endptr == input) || (*output < from) || (*output > to)) { /* (Empty string) or (Not in range) */
 		fprintf(stderr, error_string, input);
 		return EXIT_FAILURE;
-	}
-	else if (sprintf(output_char, "%ld", *output) < 0) { /* sprintf(), If an output error is encountered, a negative value is returned. */
+	} else if (sprintf(output_char, "%ld", *output) < 0) { /* sprintf(), If an output error is encountered, a negative value is returned. */
 		fprintf(stderr, F_ERROR_FUNCTION_SPRINTF_MSG);
 		return EXIT_FAILURE;
-	}
-	else if (strncmp(output_char, input, 10) != 0) { /* Contain invalid chars */
+	} else if (strncmp(output_char, input, 10) != 0) { /* Contain invalid chars */
 		fprintf(stderr, error_string, input);
 		return EXIT_FAILURE;
 	}
@@ -192,33 +192,26 @@ int read_packet(packet* pk, int default_weight) {
 			if ((count == 0) && (strlen(word) <= 20)) {
 				if ((res = convert_strin2long(word, &temp, LONG_MIN, LONG_MAX, F_ERROR_PKTID_INVALID_MSG)) > 0) {
 					return 0; /* Error occurred, Exit */
-				}
-				else {
+				} else {
 					pk->pktID = temp;
 				}
-			}
-			else if ((count == 1) && (strlen(word) <= 20)) {
+			} else if ((count == 1) && (strlen(word) <= 20)) {
 				if ((res = convert_strin2long(word, &temp, LONG_MIN, LONG_MAX, F_ERROR_TIME_INVALID_MSG)) > 0) {
 					return 0; /* Error occurred, Exit */
-				}
-				else {
+				} else {
 					pk->Time = temp;
 				}
-			}
-			else if ((count == 2) && (strlen(word) <= 15)) {
+			} else if ((count == 2) && (strlen(word) <= 15)) {
 				if (validate_IPv4(word) == -1) {
 					fprintf(stderr, F_ERROR_IP_INVALID_MSG, word);
 					return 0;
-				}
-				else {
+				} else {
 					strncpy(pk->Sadd, word, 15);
 				}
-			}
-			else if ((count == 3) && (strlen(word) <= 5)) {
+			} else if ((count == 3) && (strlen(word) <= 5)) {
 				if ((res = convert_strin2long(word, &temp, 0, 65535, F_ERROR_PORT_INVALID_MSG)) > 0) {
 					return 0; /* Error occurred, Exit */
-				}
-				else {
+				} else {
 					pk->Sport = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
 				}
 			}
@@ -226,36 +219,28 @@ int read_packet(packet* pk, int default_weight) {
 				if (validate_IPv4(word) == -1) {
 					fprintf(stderr, F_ERROR_IP_INVALID_MSG, word);
 					return 0;
-				}
-				else {
+				} else {
 					strncpy(pk->Dadd, word, 15);
 				}
-			}
-			else if ((count == 5) && (strlen(word) <= 5)) {
+			} else if ((count == 5) && (strlen(word) <= 5)) {
 				if ((res = convert_strin2long(word, &temp, 0, 65535, F_ERROR_PORT_INVALID_MSG)) > 0) {
 					return 0; /* Error occurred, Exit */
-				}
-				else {
+				} else {
 					pk->Dport = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
 				}
-			}
-			else if ((count == 6) && (strlen(word) <= 5)) {
+			} else if ((count == 6) && (strlen(word) <= 5)) {
 				if ((res = convert_strin2long(word, &temp, 1, 16384, F_ERROR_LENGTH_INVALID_MSG)) > 0) { /* TODO TODO TODO Change from 1 to 64 TODO TODO TODO !!!!!!!!!!!!! */
 					return 0; /* Error occurred, Exit */
-				}
-				else {
+				} else {
 					pk->length = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
 				}
-			}
-			else if ((count == 7) && (strlen(word) <= 11)) {
+			} else if ((count == 7) && (strlen(word) <= 11)) {
 				if ((res = convert_strin2long(word, &temp, 1, INT_MAX, F_ERROR_WEIGHT_INVALID_MSG)) > 0) {
 					return 0; /* Error occurred, Exit */
-				}
-				else if (temp) { /* There was a value for weight in the input file */
+				} else if (temp) { /* There was a value for weight in the input file */
 					pk->weight = (int)temp; /* This is secure because we alreade validate 'temp' max&min values */
 				}
-			}
-			else {
+			} else {
 				return 0; /* Invalid input, Length is too long */
 			}
 			count += 1; /* Inc the counter */
@@ -264,7 +249,7 @@ int read_packet(packet* pk, int default_weight) {
 		if (count < 7) {
 			return 0; /* Invalid input, Length is too short */
 		}
-		if (DEBUG) { printf("[A] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", pk->pktID, pk->Time, pk->Sadd, pk->Sport, pk->Dadd, pk->Dport, pk->length, pk->weight); } /* TODO DEBUG XXX DELME XXX XXX */
+		if (DEBUG_1) { printf("[A] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", pk->pktID, pk->Time, pk->Sadd, pk->Sport, pk->Dadd, pk->Dport, pk->length, pk->weight); } /* TODO DEBUG XXX DELME XXX XXX */
 		pk->next = NULL; /* Pointer to next packet in the list */
 		pk->prev = NULL; /* Pointer to prev packet in the list */
 		pk->up = NULL; /* Pointer to upper packet in the queue */
@@ -282,7 +267,7 @@ int read_packet(packet* pk, int default_weight) {
 * Return 1 on success and 0 on failure.
 */
 int copy_packet(packet* src, packet* dst) {
-	if (DEBUG) { printf("~~~START copy_packet~~~\n"); } /* XXX */
+	if (DEBUG_1) { printf("~~~START copy_packet~~~\n"); } /* XXX */
 	if ((src->weight == 0) || (dst->weight == 0)) {
 		return 0;
 	}
@@ -298,7 +283,7 @@ int copy_packet(packet* src, packet* dst) {
 	dst->prev = src->prev;
 	dst->up = src->up;
 	dst->down = src->down;
-	if (DEBUG) { printf("~~~END copy_packet~~~\n"); } /* XXX */
+	if (DEBUG_1) { printf("~~~END copy_packet~~~\n"); } /* XXX */
 	return 1;
 }
 /* void write_packet(packet* pk) { }
@@ -307,11 +292,11 @@ int copy_packet(packet* src, packet* dst) {
 * Write the packet ID to the output file
 */
 void write_packet(packet* pk) {
-	printf("packet address = %p\n", (void*)pk);
+	if (DEBUG_2) { printf("packet address = %p\n", (void*)pk); } /* XXX */
 	fprintf(OUT_FILE, "%ld: %ld\r\n", CLOCK, pk->pktID);
 	fprintf(stdout, "%ld: %ld\r\n", CLOCK, pk->pktID);
-	fflush(OUT_FILE); /* XXX */
-	fflush(stdout); /* XXX */
+	if (DEBUG_4) { fflush(OUT_FILE); } /* XXX */
+	if (DEBUG_4) { fflush(stdout); } /* XXX */
 }
 /* int same_flow(packet* pacA, packet* pacB) { }
 *
@@ -321,25 +306,25 @@ void write_packet(packet* pk) {
 * Return 0 o.w
 */
 int same_flow(packet* pacA, packet* pacB) {
-	if (DEBUG) { printf("~~~START same_flow~~~\n"); } /* XXX */
-	if (DEBUG) { printf("HHH\n"); } /* XXX */
-	if (DEBUG) { printf("[E] Pointers: [pacA]%p [pacB]%p\n", (void *)pacA, (void *)pacB); } /* XXX */
-	if (DEBUG) { printf("[C] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", pacA->pktID, pacA->Time, pacA->Sadd, pacA->Sport, pacA->Dadd, pacA->Dport, pacA->length, pacA->weight); } /* TODO DEBUG XXX DELME XXX XXX */
-	if (DEBUG) { printf("[D] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", pacB->pktID, pacB->Time, pacB->Sadd, pacB->Sport, pacB->Dadd, pacB->Dport, pacB->length, pacB->weight); } /* TODO DEBUG XXX DELME XXX XXX */
-	if (DEBUG) { printf("%d ", !strncmp(pacA->Sadd, pacB->Sadd, 15)); }
-	if (DEBUG) { printf("%d ", !strncmp(pacA->Dadd, pacB->Dadd, 15)); }
-	if (DEBUG) { printf("%d ", (pacA->Sport == pacB->Sport)); }
-	if (DEBUG) { printf("%d \n", (pacA->Dport == pacB->Dport)); }
+	if (DEBUG_1) { printf("~~~START same_flow~~~\n"); } /* XXX */
+	if (DEBUG_1) { printf("HHH\n"); } /* XXX */
+	if (DEBUG_1) { printf("[E] Pointers: [pacA]%p [pacB]%p\n", (void *)pacA, (void *)pacB); } /* XXX */
+	if (DEBUG_1) { printf("[C] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", pacA->pktID, pacA->Time, pacA->Sadd, pacA->Sport, pacA->Dadd, pacA->Dport, pacA->length, pacA->weight); } /* TODO DEBUG XXX DELME XXX XXX */
+	if (DEBUG_1) { printf("[D] pktID='%ld', Time='%ld', Sadd='%s', Sport='%d', Dadd='%s', Dport='%d', length='%d', weight='%d'\n", pacB->pktID, pacB->Time, pacB->Sadd, pacB->Sport, pacB->Dadd, pacB->Dport, pacB->length, pacB->weight); } /* TODO DEBUG XXX DELME XXX XXX */
+	if (DEBUG_1) { printf("%d ", !strncmp(pacA->Sadd, pacB->Sadd, 15)); }
+	if (DEBUG_1) { printf("%d ", !strncmp(pacA->Dadd, pacB->Dadd, 15)); }
+	if (DEBUG_1) { printf("%d ", (pacA->Sport == pacB->Sport)); }
+	if (DEBUG_1) { printf("%d \n", (pacA->Dport == pacB->Dport)); }
 	if ((!strncmp(pacA->Sadd, pacB->Sadd, 15)) &&
 		(!strncmp(pacA->Dadd, pacB->Dadd, 15)) &&
 		(pacA->Sport == pacB->Sport) &&
 		(pacA->Dport == pacB->Dport)) {
-		if (DEBUG) { printf("III_1\n"); } /* XXX */
-		if (DEBUG) { printf("~~~END same_flow~~~\n"); } /* XXX */
+		if (DEBUG_1) { printf("III_1\n"); } /* XXX */
+		if (DEBUG_1) { printf("~~~END same_flow~~~\n"); } /* XXX */
 		return 1;
 	}
-	if (DEBUG) { printf("III_0\n"); } /* XXX */
-	if (DEBUG) { printf("~~~END same_flow~~~\n"); } /* XXX */
+	if (DEBUG_1) { printf("III_0\n"); } /* XXX */
+	if (DEBUG_1) { printf("~~~END same_flow~~~\n"); } /* XXX */
 	return 0;
 }
 /* int enqueue(packet* pk) { }
@@ -349,26 +334,26 @@ int same_flow(packet* pacA, packet* pacB) {
 * Return 0 on success and 1 in case of an error
 */
 int enqueue(packet* new_pk) {
-	if (DEBUG) { printf(" >>>>>>>>>>>>>>started enqueue on pk - %d ", new_pk->pktID); }
+	if (DEBUG_1) { printf(" >>>>>>>>>>>>>>started enqueue on pk - %d ", new_pk->pktID); }
 	/* Function variables */
 	packet* search_head = NULL; /* Pointer to the current element in our round double linked list */
 								/* Init the new packet */
-	if (DEBUG) { if (STRUCTURE.head) { printf("[F] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } } /* XXX */
+	if (DEBUG_1) { if (STRUCTURE.head) { printf("[F] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } } /* XXX */
 	if (STRUCTURE.head == NULL) { /* This is the first packet in our data structure */
 		STRUCTURE.head = new_pk; /* The new packet is our new head */
 		(*new_pk).prev = new_pk; /* And he his the prev and next of himself */
 		(*new_pk).next = new_pk;
-		if (DEBUG) { printf("[C] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
+		if (DEBUG_1) { printf("[C] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
 		STRUCTURE.count = 1; /* We only have one packet in our data structure */
 		copy_packet(new_pk, STRUCTURE.flow_pk);
 	}
 	else { /* Search if the packet belong to an old flow */
 		search_head = STRUCTURE.head;
 		do {
-			if (DEBUG) { printf("GGG\n"); } /* XXX */
-			if (DEBUG) { printf("[D] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
+			if (DEBUG_1) { printf("GGG\n"); } /* XXX */
+			if (DEBUG_1) { printf("[D] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
 			if (same_flow(search_head, new_pk)) { /* If we found a flow that the new packet belongs to */
-				if (DEBUG) { printf("JJJ\n"); } /* XXX */
+				if (DEBUG_1) { printf("JJJ\n"); } /* XXX */
 												/* Connect the new packet to the packets before and after */
 				if (search_head->next != search_head) {
 					new_pk->next = search_head->next;
@@ -392,12 +377,12 @@ int enqueue(packet* new_pk) {
 					STRUCTURE.head = new_pk;
 				}
 				if (STRUCTURE.flow_pk->pktID == search_head->pktID) {
-					printf("[1] Change flow_pk from ID %ld to ID %ld\n", STRUCTURE.flow_pk->pktID, new_pk->pktID); /* DEBUG XXX DELME */
+					if (DEBUG_2) { printf("[1] Change flow_pk from ID %ld to ID %ld\n", STRUCTURE.flow_pk->pktID, new_pk->pktID); } /* DEBUG XXX DELME */
 					STRUCTURE.flow_pk = new_pk;
 				}
 				/* Finish */
 				STRUCTURE.count++; /* We added one packet to the data structure */
-				if (DEBUG) { printf("~~~END enqueue~~~\n"); } /* XXX */
+				if (DEBUG_1) { printf("~~~END enqueue~~~\n"); } /* XXX */
 				return 0;
 			}
 			search_head = search_head->next; /* Move our search head to the next element */
@@ -410,8 +395,8 @@ int enqueue(packet* new_pk) {
 		/* Finish */
 		STRUCTURE.count++; /* We added one packet to the data structure */
 	}
-	if (DEBUG) { printf(" <<<<<<<<<<<<<<<< ended enqueue on pk - %d ", new_pk->pktID); }
-	if (DEBUG) { printf("~~~END enqueue~~~\n"); } /* XXX */
+	if (DEBUG_1) { printf(" <<<<<<<<<<<<<<<< ended enqueue on pk - %d ", new_pk->pktID); }
+	if (DEBUG_1) { printf("~~~END enqueue~~~\n"); } /* XXX */
 	return 0;
 }
 /* int dequeue(packet* pk) { }
@@ -475,10 +460,10 @@ packet* find_packet() {
 	packet* search_head = STRUCTURE.head;
 	do {
 		if (same_flow(search_head, STRUCTURE.flow_pk)) { /* Head points to a packet from the correct flow */
-			if (DEBUG) { printf("[1/3] search_head->pktID %d\n", search_head->pktID); } /* TODO XXX DELME */
+			if (DEBUG_1) { printf("[1/3] search_head->pktID %d\n", search_head->pktID); } /* TODO XXX DELME */
 			if (search_head->down == NULL) { /* No more packets on flow */
 				if (search_head->next != search_head) { /* Not last one on the stractue */
-					printf("[2] Change flow_pk from ID %ld to ID %ld\n", STRUCTURE.flow_pk->pktID, search_head->next->pktID); /* DEBUG XXX DELME */
+					if (DEBUG_2) { printf("[2] Change flow_pk from ID %ld to ID %ld\n", STRUCTURE.flow_pk->pktID, search_head->next->pktID); } /* DEBUG XXX DELME */
 					STRUCTURE.flow_pk = search_head->next;
 				}
 			} else {
@@ -486,34 +471,32 @@ packet* find_packet() {
 					search_head = search_head->down;
 				}
 			}
-			if (DEBUG) { printf("[2/3] search_head->pktID %d\n", search_head->pktID); } /* TODO XXX DELME */
-			
+			if (DEBUG_1) { printf("[2/3] search_head->pktID %d\n", search_head->pktID); } /* TODO XXX DELME */
 			if ( getWight(search_head) > STRUCTURE.same_flow_send_count) { /* Sent less then requested by flow. */
-				
-				printf(" -------------------------------------------------------------------\n");
-				printf(" search_head id is %d \n", search_head->pktID);
-				printf(" search_head->weight = %d \n", search_head->weight);
-				printf(" getWight(search_head) = %d \n", getWight(search_head));
-				printf(" is diff? = %d \n", search_head->weight != getWight(search_head));
-				printf(" STRUCTURE.same_flow_send_count = %d \n", STRUCTURE.same_flow_send_count);	
-				
+				if (DEBUG_2) { /* TODO XXX DELME */
+					printf(" -------------------------------------------------------------------\n"); /* TODO XXX DELME */
+					printf(" search_head id is %d \n", search_head->pktID); /* TODO XXX DELME */
+					printf(" search_head->weight = %d \n", search_head->weight); /* TODO XXX DELME */
+					printf(" getWight(search_head) = %d \n", getWight(search_head)); /* TODO XXX DELME */
+					printf(" is diff? = %d \n", search_head->weight != getWight(search_head)); /* TODO XXX DELME */
+					printf(" STRUCTURE.same_flow_send_count = %d \n", STRUCTURE.same_flow_send_count); /* TODO XXX DELME */
+				} /* TODO XXX DELME */
 				STRUCTURE.same_flow_send_count++;
-				printf(" STRUCTURE.same_flow_send_count = %d \n", STRUCTURE.same_flow_send_count);
-				printf(" -------------------------------------------------------------------\n");
+				if (DEBUG_2) { /* TODO XXX DELME */
+					printf(" STRUCTURE.same_flow_send_count = %d \n", STRUCTURE.same_flow_send_count); /* TODO XXX DELME */
+					printf(" -------------------------------------------------------------------\n"); /* TODO XXX DELME */
+				} /* TODO XXX DELME */
 				return  search_head;
-			}
-				
-				
-			else { /* Already sent more then enagth */
-				if (DEBUG) { printf("[1] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID); }
+			} else { /* Already sent more then enagth */
+				if (DEBUG_1) { printf("[1] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID); }
 				STRUCTURE.flow_pk = STRUCTURE.flow_pk->next;
-				if (DEBUG) { printf("[2] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID); }
+				if (DEBUG_1) { printf("[2] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID); }
 				STRUCTURE.same_flow_send_count = 0;
 				while (search_head->up != NULL) {
 					search_head = search_head->up;
 				}
 			}
-			if (DEBUG) { printf("[3/3] search_head->pktID %d\n", search_head->pktID); } /* TODO XXX DELME */
+			if (DEBUG_1) { printf("[3/3] search_head->pktID %d\n", search_head->pktID); } /* TODO XXX DELME */
 		}
 		search_head = search_head->next;
 	} while (1);
@@ -524,26 +507,20 @@ packet* find_packet() {
 * Return the time the transmission toke
 */
 int send_packet() {
-	if (DEBUG) { printf(" __________________________started send packet \n\n"); }
+	if (DEBUG_1) { printf(" __________________________started send packet \n\n"); }
 	/* find the pacekt to be sent*/
 	packet* pk = find_packet();
 	int return_time = (int)(pk->length);
-	if (DEBUG) { printf("%d", return_time); } /* TODO XXX DELME XXX TODO */
-											  /* send packet */
+	if (DEBUG_1) { printf("%d", return_time); } /* TODO XXX DELME XXX TODO */
+	/* send packet */
 	write_packet(pk);
 	/* move weight up */
-
 	if (pk->up != NULL) {
 		(*pk->up).weight = pk->weight;
 	}
-
 	/* delete packet */
-	if (pk->pktID == 24) { /* TODO XXX DELME XXX */
-		printf("TODO DEBUG DELME XXX\n");/* TODO XXX DELME XXX */
-	} /* TODO XXX DELME XXX */
-
 	dequeue(pk);
-	if (DEBUG) { printf(" ------------------------- finished send packet \n\n"); }
+	if (DEBUG_1) { printf(" ------------------------- finished send packet \n\n"); }
 	return return_time;
 }
 /* void print() { }
@@ -555,7 +532,7 @@ void print() {
 	packet* pkt = STRUCTURE.head;
 	packet* dive_in;
 	if (pkt) {
-		if (DEBUG) { printf("~~~START print~~~\n"); } /* XXX */
+		if (DEBUG_1) { printf("~~~START print~~~\n"); } /* XXX */
 		printf("[A] Pointers: [pkt]%p=>%p [head]%p=>%p\n", (void *)pkt, (void *)pkt->next, (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); /* XXX */
 		printf("|========================================================================|\n");
 		printf("| Current time=%-20ld Number of waiting packets=%-10i |\n", CLOCK, STRUCTURE.count);
@@ -578,7 +555,7 @@ void print() {
 		/*║                                  │                       │                ║*/
 		/*╚==================================╧=======================╧================╝*/
 		if (STRUCTURE.head) { printf("[H] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
-		if (DEBUG) { printf("~~~END print~~~\n"); } /* XXX */
+		if (DEBUG_1) { printf("~~~END print~~~\n"); } /* XXX */
 	}
 }
 /* int main(int argc, char *argv[]) { }
@@ -650,16 +627,16 @@ int main(int argc, char *argv[]) {
 	last_packet = (packet*)malloc(sizeof(packet)); /* TODO free memory & allocation check */
 	QUANTUM = input_weight; /* TODO XXX DELME XXX TODO */
 	QUANTUM = QUANTUM; /* TODO XXX DELME XXX TODO */
-					   /* Weighted Round Robin
-					   * 1) If total weights is W, it takes W rounds to complete a cycle.
-					   * 2) Each flow i transmits w[i] packets in a cycle.
-					   *
-					   * Deficit Round Robin
-					   * 1) Each flow has a credit counter.
-					   * 2) Credit counter is increased by “quantum” with every cycle.
-					   * 3) A packet is sent only if there is enough credit.
-					   */
-					   /* Start the clock :) */
+	/* Weighted Round Robin
+	 * 1) If total weights is W, it takes W rounds to complete a cycle.
+	 * 2) Each flow i transmits w[i] packets in a cycle.
+	 *
+	 * Deficit Round Robin
+	 * 1) Each flow has a credit counter.
+	 * 2) Credit counter is increased by “quantum” with every cycle.
+	 * 3) A packet is sent only if there is enough credit.
+	 */
+	/* Start the clock :) */
 	int readed = 0;
 	while ((readed = read_packet(last_packet, input_weight)) || (STRUCTURE.count > 0)) { /* while there are more packets to work on */
 		if (readed == 0) {
@@ -669,9 +646,7 @@ int main(int argc, char *argv[]) {
 			while (last_packet->Time > CLOCK) {
 				if (STRUCTURE.count > 0) {
 					CLOCK += send_packet();
-					// printf(" send:    ");
-					if (DEBUG) { print(); } /* TODO DEBUG DELME XXX TODO */
-					print();
+					if (DEBUG_3) { print(); } /* TODO DEBUG DELME XXX TODO */
 				} else {
 					CLOCK = last_packet->Time;
 				}
@@ -683,7 +658,7 @@ int main(int argc, char *argv[]) {
 				fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
 				return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
 			}
-			print();
+			if (DEBUG_3) { print(); } /* TODO DEBUG DELME XXX TODO */
 		}
 		last_packet->weight = 0;
 	}
