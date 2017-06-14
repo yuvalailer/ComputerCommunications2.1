@@ -343,8 +343,14 @@ int enqueue(packet* new_pk) {
 			if (same_flow(search_head, new_pk)) { /* If we found a flow that the new packet belongs to */
 				printf("JJJ\n"); /* XXX */
 				/* Connect the new packet to the packets before and after */
+				if (search_head->next != search_head) {
 				new_pk->next = search_head->next;
 				new_pk->prev = search_head->prev;
+				}
+				else {
+					new_pk->next = new_pk;
+					new_pk->prev = new_pk;
+				}
 				/* Update the packet before and after to point on the new packet */
 				search_head->prev->next = new_pk;
 				search_head->next->prev = new_pk;
