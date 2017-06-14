@@ -1,8 +1,8 @@
-﻿#include <errno.h>	/* ERANGE, errno */
-#include <limits.h>	/* LONG_MAX, LONG_MIN */
-#include <stdio.h>	/* FILE, printf, fprintf, sprintf, stderr, fopen, fclose */
-#include <stdlib.h>	/* EXIT_FAILURE, EXIT_SUCCESS, NULL, strtol */
-#include <string.h>	/* strncmp, //strerror_s */
+﻿#include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define USAGE_OPERANDS_MISSING_MSG		"Missing operands\nUsage: %s <TYPE [RR/DRR]> <INPUT FILE> <OUTPUT FILE> <WEIGHT> <QUANTUM>\n"
 #define USAGE_OPERANDS_SURPLUS_MSG		"Too many operands\nUsage: %s <TYPE [RR/DRR]> <INPUT FILE> <OUTPUT FILE> <WEIGHT> <QUANTUM>\n"
@@ -26,10 +26,10 @@
 DEBUG = 0; /* TODO XXX DELME XXX TODO */
 
 typedef struct DataStructure {
-	struct Packets* head;	/* Pointer to the head of the round double linked list */
-	int count;		/* The total number of packets, Need to be updated in every insert & delete */
-	int same_flow_send_count; /* the number of packets sent from a certain flow  */
-	struct Packets* flow_pk; /* a pointer to a pk for 'same_flow' use perpose */ 
+	struct Packets* head;		/* Pointer to the head of the round double linked list */
+	int count;					/* The total number of packets, Need to be updated in every insert & delete */
+	int same_flow_send_count;	/* The number of packets sent from a certain flow  */
+	struct Packets* flow_pk;	/* A pointer to a pk for 'same_flow' use perpose */ 
 } structure;
 typedef struct Packets {
 	long pktID;				/* Unique ID (long int [-9223372036854775808,9223372036854775807]) */
@@ -61,8 +61,8 @@ void write_packet(packet* pk);							/* Write the packet ID to the output file *
 int same_flow(packet* pacA, packet* pacB);				/* Check if two packets belong to the same flow */
 int enqueue(packet* new_pk);							/* Add packet to our data structure */
 int dequeue(packet* pk);								/* Remove packet from our data structure */
-packet* find_packet();									/* xxxxxxxxxxxxx */
-int send_packet();										/* xxxxxxxxxxxxx */
+packet* find_packet();									/* Find the next packet that need to be sent */
+int send_packet();										/* Send the next packet that need to be sent */
 void print();											/* Print the packets in line */
 int main(int argc, char *argv[]);						/* Simulate round robin algorithm */
 
@@ -286,7 +286,9 @@ int copy_packet(packet* src, packet* dst) {
  */
 void write_packet(packet* pk) {
 	fprintf(OUT_FILE, "%ld: %ld\r\n", CLOCK, pk->pktID);
-	fflush(OUT_FILE);
+	fprintf(stdout, "%ld: %ld\r\n", CLOCK, pk->pktID);
+	fflush(OUT_FILE); /* XXX */
+	fflush(stdout); /* XXX */
 }
 /* int same_flow(packet* pacA, packet* pacB) { }
  *
@@ -416,9 +418,8 @@ int dequeue(packet* pk) {
 }
 /* packet* find_packet() { }
  *
- * Receive ??? XXX ??? XXX
- * ??? XXX ??? XXX
- * Return ??? XXX ??? XXX
+ * Find the next packet that need to be sent
+ * Return pointer to that packet
  */
 packet* find_packet() {
 	packet* search_head = STRUCTURE.head;
@@ -454,11 +455,10 @@ packet* find_packet() {
 }
 /* int send_packet() { }
  *
- * Receive ??? XXX ??? XXX
- * ??? XXX ??? XXX
- * Return ??? XXX ??? XXX
+ * Send the next packet that need to be sent
+ * Return the time the transmission toke
  */
-int send_packet() { /* TODO TODO TODO  Write to output file */
+int send_packet() {
 	if (DEBUG) {printf(" __________________________started send packet \n\n");}
 	/* find the pacekt to be sent*/
 	packet* pk = find_packet();
