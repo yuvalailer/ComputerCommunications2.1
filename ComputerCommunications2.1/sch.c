@@ -24,7 +24,7 @@
 #define F_ERROR_WEIGHT_INVALID_MSG		"[Error] The weight '%s' is not a positive integer\n"
 
 int DEBUG_1 = 0; /* Alot of printing */ /* TODO XXX DELME XXX TODO */
-int DEBUG_2 = 0; /* Not alot of printing */ /* TODO XXX DELME XXX TODO */
+int DEBUG_2 = 1; /* Not alot of printing */ /* TODO XXX DELME XXX TODO */
 int DEBUG_3 = 0; /* Print the data structure */ /* TODO XXX DELME XXX TODO */
 int DEBUG_4 = 1; /* Show what is written to the file */ /* TODO XXX DELME XXX TODO */
 
@@ -294,7 +294,7 @@ int copy_packet(packet* src, packet* dst) {
 void write_packet(packet* pk) {
 	if (DEBUG_2) { printf("packet address = %p\n", (void*)pk); } /* XXX */
 	fprintf(OUT_FILE, "%ld: %ld\r\n", CLOCK, pk->pktID);
-	fprintf(stdout, "%ld: %ld\r\n", CLOCK, pk->pktID);
+	if (DEBUG_4) { fprintf(stdout, "#### WRITE TO FILE: '%ld: %ld'\r\n", CLOCK, pk->pktID); } /* XXX */
 	if (DEBUG_4) { fflush(OUT_FILE); } /* XXX */
 	if (DEBUG_4) { fflush(stdout); } /* XXX */
 }
@@ -337,7 +337,7 @@ int enqueue(packet* new_pk) {
 	if (DEBUG_1) { printf(" >>>>>>>>>>>>>>started enqueue on pk - %d ", new_pk->pktID); }
 	/* Function variables */
 	packet* search_head = NULL; /* Pointer to the current element in our round double linked list */
-								/* Init the new packet */
+	/* Init the new packet */
 	if (DEBUG_1) { if (STRUCTURE.head) { printf("[F] Pointers: [head]%p=>%p\n", (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } } /* XXX */
 	if (STRUCTURE.head == NULL) { /* This is the first packet in our data structure */
 		STRUCTURE.head = new_pk; /* The new packet is our new head */
@@ -346,20 +346,18 @@ int enqueue(packet* new_pk) {
 		if (DEBUG_1) { printf("[C] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
 		STRUCTURE.count = 1; /* We only have one packet in our data structure */
 		copy_packet(new_pk, STRUCTURE.flow_pk);
-	}
-	else { /* Search if the packet belong to an old flow */
+	} else { /* Search if the packet belong to an old flow */
 		search_head = STRUCTURE.head;
 		do {
 			if (DEBUG_1) { printf("GGG\n"); } /* XXX */
 			if (DEBUG_1) { printf("[D] Pointers: [new_pk]%p=>%p [head]%p=>%p\n", (void *)new_pk, (void *)(new_pk->next), (void *)(STRUCTURE.head), (void *)((*STRUCTURE.head).next)); } /* XXX */
 			if (same_flow(search_head, new_pk)) { /* If we found a flow that the new packet belongs to */
 				if (DEBUG_1) { printf("JJJ\n"); } /* XXX */
-												/* Connect the new packet to the packets before and after */
+				/* Connect the new packet to the packets before and after */
 				if (search_head->next != search_head) {
 					new_pk->next = search_head->next;
 					new_pk->prev = search_head->prev;
-				}
-				else {
+				} else {
 					new_pk->next = new_pk;
 					new_pk->prev = new_pk;
 				}
@@ -387,7 +385,29 @@ int enqueue(packet* new_pk) {
 			}
 			search_head = search_head->next; /* Move our search head to the next element */
 		} while (search_head != STRUCTURE.head); /* Until we complets a single round over the list */
-												 /* Havn't found a flow that the new packet belongs to => Create a new one */
+		/* Havn't found a flow that the new packet belongs to => Create a new one */
+		/* We need to check if the packet belong the a flow that been deleted or this is a brand new flow... */
+		packet* head_flows = STRUCTURE.weight_keeper; /* Point to top of the line */
+		packet* head_packets = STRUCTURE.head; /* Point to first packet in our data structure */
+		if (new_pk->pktID == 3) { /* TODO DEBUG DELME XXX */
+			printf("NOOOOOOOOOOOOOOO"); /* TODO DEBUG DELME XXX */
+		} /* TODO DEBUG DELME XXX */
+		while (head_flows->down != NULL) { /* Foreach flow in our program history */
+			if (same_flow(head_flows, new_pk)) {
+				printf("new_pk %ld\n", new_pk->pktID); /* XXX */
+				printf("head_flows %ld\n", head_flows->pktID); /* XXX */
+				printf("head_packets %ld\n", head_packets->pktID); /* XXX */
+				STRUCTURE.count++; /* We added one packet to the data structure */
+				if (DEBUG_1) { printf("~~~END enqueue~~~\n"); } /* XXX */
+				return 0;
+			} else {
+				if ((STRUCTURE.head != head_packets->next) && (same_flow(head_flows, head_packets))) { /* The head_packets can't complete a round and go back the the first flow */
+					head_packets = head_packets->next; /* Move to the next flow in our data structure */
+				}
+				head_flows = head_flows->down; /* Move the flow search head to the next one */
+			}
+		}
+		/* If we got here, This packet is from a brand new flow, We never saw this flow before */
 		new_pk->next = STRUCTURE.head;
 		new_pk->prev = (*STRUCTURE.head).prev;
 		(*(*STRUCTURE.head).prev).next = new_pk;
@@ -429,34 +449,37 @@ int dequeue(packet* pk) {
 	STRUCTURE.count--;
 	return 0;
 }
-/* packet* find_packet() { }
-*
-* Find the next packet that need to be sent
-* Return pointer to that packet
-*/
+/* TTT TODO
+ * TTT TODO
+ * TTT TODO
+ * TTT TODO
+ */
 int getWight(packet* input_packet) {
-	packet* search_head = STRUCTURE.weight_keeper; /* point to top of the line */
-	while ( search_head->down != NULL ) { /* while didn't hit the botton */
-		if ( same_flow(search_head,input_packet) ) { /* found a packet with the same flow */
+	packet* search_head = STRUCTURE.weight_keeper; /* Point to top of the line */
+	while ( search_head->down != NULL ) { /* While didn't hit the botton */
+		if ( same_flow(search_head,input_packet) ) { /* Found a packet with the same flow */
 			return search_head->weight;
-		}
-		else { 
+		} else { 
 			search_head = search_head->down;
 		}
-	} /* haven't found a packet with the same flow */
+	} /* Haven't found a packet with the same flow */
 	if (same_flow(search_head, input_packet)) {/* -last packet- found a packet with the same flow */
 		return search_head->weight; /* TODO - is this cheack necessary */ 
-	}/* haven't found a packet with the same flow in the whole world */
-	/* add packet */
+	} /* Haven't found a packet with the same flow in the whole world */
+	/* Add packet */
 	packet* new_comper_packet = (packet*)malloc(sizeof(packet)); /* TODO free memory & allocation check */
 	copy_packet(input_packet, new_comper_packet);
-	/* set values */
+	/* Set values */
 	search_head->down = new_comper_packet;
 	new_comper_packet->up = search_head;
 	new_comper_packet->down = NULL;
 	return input_packet->weight;
 }
-
+/* packet* find_packet() { }
+ *
+ * Find the next packet that need to be sent
+ * Return pointer to that packet
+ */
 packet* find_packet() {
 	packet* search_head = STRUCTURE.head;
 	do {
