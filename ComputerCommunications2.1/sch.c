@@ -25,7 +25,7 @@
 
 int DEBUG_1 = 0; /* Alot of printing */ /* TODO XXX DELME XXX TODO */
 int DEBUG_2 = 1; /* Not alot of printing */ /* TODO XXX DELME XXX TODO */
-int DEBUG_3 = 0; /* Print the data structure */ /* TODO XXX DELME XXX TODO */
+int DEBUG_3 = 1; /* Print the data structure */ /* TODO XXX DELME XXX TODO */
 int DEBUG_4 = 0; /* Show what is written to the file */ /* TODO XXX DELME XXX TODO */
 
 typedef struct DataStructure {
@@ -67,6 +67,7 @@ void write_packet(packet* pk);							/* Write the packet ID to the output file *
 int same_flow(packet* pacA, packet* pacB);				/* Check if two packets belong to the same flow */
 int enqueue(packet* new_pk);							/* Add packet to our data structure */
 int dequeue(packet* pk);								/* Remove packet from our data structure */
+int getWight(packet* input_packet);						/* TODO TODO TODO */
 packet* find_packet();									/* Find the next packet that need to be sent */
 int send_packet();										/* Send the next packet that need to be sent */
 void print();											/* Print the packets in line */
@@ -325,6 +326,9 @@ void write_packet(packet* pk) {
 * Return 0 o.w
 */
 int same_flow(packet* pacA, packet* pacB) {
+	if ((!pacA) || (!pacB)) {
+		return 0;
+	}
 	if (DEBUG_1) { printf("~~~START same_flow~~~\n"); } /* XXX */
 	if (DEBUG_1) { printf("HHH\n"); } /* XXX */
 	if (DEBUG_1) { printf("[E] Pointers: [pacA]%p [pacB]%p\n", (void *)pacA, (void *)pacB); } /* XXX */
@@ -406,27 +410,40 @@ int enqueue(packet* new_pk) {
 		} while (search_head != STRUCTURE.head); /* Until we complets a single round over the list */
 		/* Havn't found a flow that the new packet belongs to => Create a new one */
 		/* We need to check if the packet belong the a flow that been deleted or this is a brand new flow... */
+		getWight(new_pk);
 		packet* head_flows = STRUCTURE.weight_keeper; /* Point to top of the line */
 		packet* head_packets = STRUCTURE.head; /* Point to first packet in our data structure */
 		if (new_pk->pktID == 3) { /* TODO DEBUG DELME XXX */
-			printf("NOOOOOOOOOOOOOOO"); /* TODO DEBUG DELME XXX */
+			printf("NOOOOOOOOOOOOOOO\n"); /* TODO DEBUG DELME XXX */
 		} /* TODO DEBUG DELME XXX */
 		while (head_flows->down != NULL) { /* Foreach flow in our program history */
 			if (same_flow(head_flows, new_pk)) {
 				printf("new_pk %ld\n", new_pk->pktID); /* XXX */
 				printf("head_flows %ld\n", head_flows->pktID); /* XXX */
+				if (head_packets == NULL) { /* Add to the end of the data structure */
+					break;
+				} /* Add the packet before head_packets */
 				printf("head_packets %ld\n", head_packets->pktID); /* XXX */
+				new_pk->next = head_packets;
+				new_pk->prev = head_packets->prev;
+				head_packets->prev->next = new_pk;
+				head_packets->prev = new_pk;
+				if (STRUCTURE.head == head_packets) {
+					STRUCTURE.head = new_pk;
+				}
 				STRUCTURE.count++; /* We added one packet to the data structure */
 				if (DEBUG_1) { printf("~~~END enqueue~~~\n"); } /* XXX */
 				return 0;
 			} else {
-				if ((STRUCTURE.head != head_packets->next) && (same_flow(head_flows, head_packets))) { /* The head_packets can't complete a round and go back the the first flow */
+				if ((head_packets == NULL) || (STRUCTURE.head != head_packets->next)) { /* The head_packets can't complete a round and go back the the first flow */
+					head_packets = NULL; /* The new flow will be added at the end of the structure */
+				} else if (same_flow(head_flows, head_packets)) {
 					head_packets = head_packets->next; /* Move to the next flow in our data structure */
 				}
 				head_flows = head_flows->down; /* Move the flow search head to the next one */
 			}
 		}
-		/* If we got here, This packet is from a brand new flow, We never saw this flow before */
+		/* If we got here, This packet is from a brand new flow, We never saw this flow before, Or, Just add it at the end */
 		new_pk->next = STRUCTURE.head;
 		new_pk->prev = (*STRUCTURE.head).prev;
 		(*(*STRUCTURE.head).prev).next = new_pk;
@@ -509,8 +526,7 @@ packet* find_packet() {
 					if (DEBUG_2) { printf("[2] Change flow_pk from ID %ld to ID %ld\n", STRUCTURE.flow_pk->pktID, search_head->next->pktID); } /* DEBUG XXX DELME */
 					STRUCTURE.flow_pk = search_head->next;
 				}
-			}
-			else {
+			} else {
 				while (search_head->down != NULL) {
 					search_head = search_head->down;
 				}
@@ -533,7 +549,6 @@ packet* find_packet() {
 				if (!same_flow(search_head, STRUCTURE.flow_pk)) {
 					STRUCTURE.same_flow_send_count = 0;
 				}
-
 				if (strcmp(TYPE,"DRR")) {
 					/* is RR */
 					return  search_head;
@@ -553,9 +568,7 @@ packet* find_packet() {
 						STRUCTURE.same_flow_send_count = 0;
 					}
 				}
-
-			}
-			else { /* Already sent more then enagth */
+			} else { /* Already sent more then enagth */
 				if (DEBUG_1) { printf("[1] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID); }
 				STRUCTURE.flow_pk = STRUCTURE.flow_pk->next;
 				if (DEBUG_1) { printf("[2] flow pk is - %d \n\n\n", STRUCTURE.flow_pk->pktID); }
@@ -639,8 +652,8 @@ int main(int argc, char *argv[]) {
 	int res = 0;			/* Temporary variable to store function response */
 	long temp = 0;			/* Temporary variable */
 	packet* last_packet;	/* Temporary variable for the last readed packet from the input file */
-	packet* comper_packet; /* packet for same_flow perposes */
-						   /* Check correct call structure */
+	packet* comper_packet;	/* packet for same_flow perposes */
+	/* Check correct call structure */
 	if (argc != 6) {
 		if (argc < 6) {
 			printf(USAGE_OPERANDS_MISSING_MSG, argv[0]);
@@ -695,16 +708,16 @@ int main(int argc, char *argv[]) {
 	last_packet = (packet*)malloc(sizeof(packet)); /* TODO free memory & allocation check */
 	QUANTUM = input_weight; /* TODO XXX DELME XXX TODO */
 	QUANTUM = QUANTUM; /* TODO XXX DELME XXX TODO */
-					   /* Weighted Round Robin
-					   * 1) If total weights is W, it takes W rounds to complete a cycle.
-					   * 2) Each flow i transmits w[i] packets in a cycle.
-					   *
-					   * Deficit Round Robin
-					   * 1) Each flow has a credit counter.
-					   * 2) Credit counter is increased by “quantum” with every cycle.
-					   * 3) A packet is sent only if there is enough credit.
-					   */
-					   /* Start the clock :) */
+	/* Weighted Round Robin
+	 * 1) If total weights is W, it takes W rounds to complete a cycle.
+	 * 2) Each flow i transmits w[i] packets in a cycle.
+	 *
+	 * Deficit Round Robin
+	 * 1) Each flow has a credit counter.
+	 * 2) Credit counter is increased by “quantum” with every cycle.
+	 * 3) A packet is sent only if there is enough credit.
+	 */
+	/* Start the clock :) */
 	int readed = 0;
 	while ((readed = read_packet(last_packet, input_weight)) || (STRUCTURE.count > 0)) { /* while there are more packets to work on */
 		if (readed == 0) {
