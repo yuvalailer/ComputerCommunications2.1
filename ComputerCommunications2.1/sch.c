@@ -570,7 +570,16 @@ packet* find_packet() {
 			}
 			else {
 				//print();
-				/* is DRR */
+				/* Add the new round */
+				rounds* rnd = STRUCTURE.first_round;
+				while (rnd != NULL) { /* Count how many round we miss */
+					rnd = rnd->next;
+				}
+				rounds* new_rnd = (rounds *)malloc(sizeof(rounds));
+				new_rnd->next = NULL;
+				new_rnd->Time = CLOCK;
+				rnd->next = new_rnd;
+				/* DRR stuff */
 				search_head->bank = search_head->bank + QUANTUM; // add coin 
 				//printf("id: %d bank: %d length: %d \n ", search_head->pktID, search_head->bank, search_head->length);
 				if (search_head->bank >= search_head->length) {	 // enagth to send. 
