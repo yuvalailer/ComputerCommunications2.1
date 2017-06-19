@@ -30,6 +30,7 @@ typedef struct DataStructure {
 	struct Packets* flow_pk;	/* A pointer to a pk for 'same_flow' use perpose */
 	struct Packets* weight_keeper;	/* A pointer to a pk for 'same_flow' use perpose */
 	struct Packets* flow_pk2;
+	struct Rounds* first_round;
 } structure;
 typedef struct Packets {
 	long pktID;				/* Unique ID (long int [-9223372036854775808,9223372036854775807]) */
@@ -46,6 +47,10 @@ typedef struct Packets {
 	struct Packets* up;		/* Pointer to upper packet in the queue */
 	struct Packets* down;	/* Pointer to lower packet in the queue */
 } packet;
+typedef struct Rounds {
+	long Time;
+	struct Rounds* next;
+} rounds;
 
 char TYPE[4];				/* RR or DRR */
 FILE* IN_FILE = NULL;		/* The input file */
@@ -66,6 +71,7 @@ int dequeue(packet* pk);								/* Remove packet from our data structure */
 int getWight(packet* input_packet);						/* Update the weight of the packet based on the original flow weight */
 packet* find_packet();									/* Find the next packet that need to be sent */
 int send_packet();										/* Send the next packet that need to be sent */
+void print();											/* TODO XXX DELME TOSO XXX DELME */
 int main(int argc, char *argv[]);						/* Simulate round robin algorithm */
 
 														/* int program_end(int error) { }
@@ -268,6 +274,19 @@ int read_packet(packet* pk, int default_weight) {
 		pk->prev = NULL; /* Pointer to prev packet in the list */
 		pk->up = NULL; /* Pointer to upper packet in the queue */
 		pk->down = NULL; /* Pointer to lower packet in the queue */
+		if (strcmp(TYPE, "RR") != 0) { /* DRR */
+			int round_count = 0;
+			rounds* rnd = STRUCTURE.first_round;
+			while (rnd != NULL) { /* Count how many round we miss */
+				if (rnd->Time <= pk->Time) {
+					round_count++;
+				}
+				rnd = rnd->next;
+			}
+			pk->bank = round_count * QUANTUM; /* Init the bank value */
+		} else{
+			pk->bank = 0;
+		}
 		return 1;
 	}
 	else {
@@ -550,6 +569,7 @@ packet* find_packet() {
 				//type_flag = 1; // is good to go 
 			}
 			else {
+				//print();
 				/* is DRR */
 				search_head->bank = search_head->bank + QUANTUM; // add coin 
 				//printf("id: %d bank: %d length: %d \n ", search_head->pktID, search_head->bank, search_head->length);
@@ -577,7 +597,7 @@ packet* find_packet() {
 			if (search_head->up != NULL) {
 				up = search_head->up->pktID;
 			}
-			printf(" prints - id: %d length: %d , up is - %d \n ", search_head->pktID, search_head->length,up);
+			//printf(" prints - id: %d length: %d , up is - %d \n ", search_head->pktID, search_head->length,up);
 			return search_head;
 		}
 	}
@@ -655,6 +675,37 @@ int send_packet() {
 	dequeue(pk);
 	return return_time;
 }
+/* void print() { }
+*
+* Print the packets in line
+* For debugging and support use only!!!
+*/
+void print() {
+	packet* pkt = STRUCTURE.head;
+	packet* dive_in;
+	if (pkt) {
+		printf("|========================================================================|\n");
+		printf("| Current time=%-20ld Number of waiting packets=%-10i |\n", CLOCK, STRUCTURE.count);
+		printf("|=========================|===========================|==================|\n");
+		do {
+			printf("| ID=%-20ld | Time=%-20ld | Stat=%5i/%-5i |\n", pkt->pktID, pkt->Time, pkt->bank, pkt->length);
+			dive_in = pkt->down;
+			while (dive_in) {
+				printf("|==ID=%-20ld| Time=%-20ld | Stat=%5i/%-5i |\n", dive_in->pktID, dive_in->Time, dive_in->bank, dive_in->length);
+				dive_in = dive_in->down;
+			}
+			pkt = pkt->next; /* Move to the next element */
+		} while (pkt != STRUCTURE.head); /* Until we complets a single round over the list */
+		printf("|=========================|===========================|==================|\n");
+		/*╔══════════════════════════════════╤═══════════════════════╤════════════════╗*/
+		/*║               Col1               │         Col2          │      Col3      ║*/
+		/*╠══════════════════════════════════╪═══════════════════════╪════════════════╣*/
+		/*║                                  │                       │                ║*/
+		/*║                                  │                       │                ║*/
+		/*║                                  │                       │                ║*/
+		/*╚══════════════════════════════════╧═══════════════════════╧════════════════╝*/
+	}
+}
 /* int main(int argc, char *argv[]) { }
 *
 * Receive command line arguments
@@ -716,6 +767,7 @@ int main(int argc, char *argv[]) {
 	}
 	/* Init variables */
 	STRUCTURE.head = NULL;
+	STRUCTURE.first_round = NULL;
 	STRUCTURE.count = 0;
 	STRUCTURE.same_flow_send_count = 0;
 	comper_packet = (packet*)malloc(sizeof(packet));
@@ -750,7 +802,7 @@ int main(int argc, char *argv[]) {
 		packet* new_pk = (packet *)malloc(sizeof(packet));
 		if (copy_packet(last_packet, new_pk)) {
 			new_pk->bank = 0;
-			printf("enquqe id - %d time is- %d \n\n", last_packet->pktID, CLOCK); // TODO delme  
+			//printf("enquqe id - %d time is- %d \n\n", last_packet->pktID, CLOCK); // TODO delme  
 			if (enqueue(new_pk)) { /* Add the new packet to the data structure and keep reading for more packets with the same time */
 				fprintf(stderr, F_ERROR_ENQUEUE_FAILED_MSG, last_packet->pktID);
 				return program_end(EXIT_FAILURE); /* Error occurred in enqueue() */
