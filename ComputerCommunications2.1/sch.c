@@ -555,7 +555,6 @@ packet* find_packet() {
 			else {
 				STRUCTURE.flow_pk2 = STRUCTURE.flow_pk2->down;
 			}
-
 			/* Go back to the beginning of find_packet() {recursive call} */
 		}
 		else { /* have more to send from the flow & have more packets. */
@@ -578,7 +577,11 @@ packet* find_packet() {
 				rounds* new_rnd = (rounds *)malloc(sizeof(rounds));
 				new_rnd->next = NULL;
 				new_rnd->Time = CLOCK;
-				rnd->next = new_rnd;
+				if (rnd != NULL) {
+					rnd->next = new_rnd;
+				} else { /* First round? */
+					STRUCTURE.first_round = new_rnd;
+				}
 				/* DRR stuff */
 				search_head->bank = search_head->bank + QUANTUM; // add coin 
 				//printf("id: %d bank: %d length: %d \n ", search_head->pktID, search_head->bank, search_head->length);
